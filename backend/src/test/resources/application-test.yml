@@ -1,3 +1,10 @@
+app:
+  jwt:
+    secret: dGVzdC1qd3Qtc2VjcmV0LWtleS1jYWxvcmllLXRyYWNrZXItZW5vdWdoLWJpdHMhIQ==
+    expiration-ms: 3600000  # 1 hour for tests
+  cors:
+    allowed-origins: "*"
+
 spring:
   datasource:
     url: jdbc:h2:mem:calorietracker;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH

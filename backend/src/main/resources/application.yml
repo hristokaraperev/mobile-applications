@@ -1,3 +1,11 @@
+app:
+  jwt:
+    # Base64-encoded HS256 secret (min 256 bits). Override via APP_JWT_SECRET in production.
+    secret: ${APP_JWT_SECRET:Y2Fsb3JpZS10cmFja2VyLWRldi1vbmx5LXNlY3JldC1rZXktZG8tbm90LXVzZS1pbi1wcm9kdWN0aW9u}
+    expiration-ms: 86400000  # 24 hours
+  cors:
+    allowed-origins: ${APP_CORS_ORIGINS:*}
+
 spring:
   application:
     name: calorie-tracker
