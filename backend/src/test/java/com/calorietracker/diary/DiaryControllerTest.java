@@ -1,6 +1,10 @@
 package com.calorietracker.diary;
 
 import com.calorietracker.AbstractIntegrationTest;
+import com.calorietracker.recipe.Recipe;
+import com.calorietracker.recipe.RecipeIngredient;
+import com.calorietracker.recipe.RecipeIngredientRepository;
+import com.calorietracker.recipe.RecipeRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -25,8 +30,11 @@ class DiaryControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired RecipeRepository recipeRepository;
+    @Autowired RecipeIngredientRepository recipeIngredientRepository;
 
     private String token;
+    private Long userId;
     private Long foodId;
 
     @BeforeEach
@@ -41,7 +49,9 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        token = objectMapper.readTree(regResponse).get("accessToken").asText();
+        JsonNode regJson = objectMapper.readTree(regResponse);
+        token = regJson.get("accessToken").asText();
+        userId = regJson.get("user").get("id").asLong();
         foodId = createFood("Apple", 52.0, 0.3, 14.0, 0.2);
     }
 
@@ -91,7 +101,51 @@ class DiaryControllerTest extends AbstractIntegrationTest {
         UUID.fromString(json.get("id").asText());
     }
 
+    @Test
+    void createEntry_recipePortionSource_snapshotsPerPortionNutrition() throws Exception {
+        // Recipe: 2 portions. Ingredient: 200g of Apple (52 kcal, 0.3g protein, 14g carbs, 0.2g fat per 100g).
+        // Total recipe: kcal=104, protein=0.6, carbs=28, fat=0.4
+        // Per portion: kcal=52, protein=0.3, carbs=14, fat=0.2
+        // Logging 1 portion → expects those per-portion values
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "LUNCH",
+                                "sourceType", "RECIPE_PORTION",
+                                "recipeId", recipeId,
+                                "quantity", 1.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.sourceType").value("RECIPE_PORTION"))
+                .andExpect(jsonPath("$.kcal").value(52.0))
+                .andExpect(jsonPath("$.proteinG").value(0.3))
+                .andExpect(jsonPath("$.carbsG").value(14.0))
+                .andExpect(jsonPath("$.fatG").value(0.2));
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private Long createRecipe(int portions, Long ingredientFoodId, double ingredientGrams) {
+        Recipe recipe = new Recipe();
+        recipe.setUserId(userId);
+        recipe.setName("TestRecipe-" + UUID.randomUUID());
+        recipe.setNumberOfPortions(portions);
+        recipe.setUpdatedAt(OffsetDateTime.now());
+        recipe.setDeleted(false);
+        Long recipeId = recipeRepository.save(recipe).getId();
+
+        RecipeIngredient ingredient = new RecipeIngredient();
+        ingredient.setRecipeId(recipeId);
+        ingredient.setFoodId(ingredientFoodId);
+        ingredient.setGrams(ingredientGrams);
+        recipeIngredientRepository.save(ingredient);
+
+        return recipeId;
+    }
 
     private Long createFood(String name, double kcal, double proteinG, double carbsG, double fatG) throws Exception {
         String response = mockMvc.perform(post("/foods")
