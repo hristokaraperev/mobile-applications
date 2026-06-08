@@ -82,6 +82,13 @@
             <version>2.8.9</version>
         </dependency>
 
+        <!-- CSV parsing for CIQUAL seeder -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>1.12.0</version>
+        </dependency>
+
         <!-- Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

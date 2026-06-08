@@ -118,6 +118,82 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Foods",
+      "description": "Food lookup and user-contributed food creation. All requests require a Bearer token.",
+      "item": [
+        {
+          "name": "Search Foods",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/foods/search?q=apple",
+              "host": ["{{baseUrl}}"],
+              "path": ["foods", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "apple",
+                  "description": "Partial name to search for (case-insensitive). Returns up to 50 results."
+                }
+              ]
+            },
+            "description": "Search for foods by name across all sources (CIQUAL, OFF, USER). Returns up to 50 results ordered alphabetically. Requires authentication."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Food by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/foods/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["foods", "1"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Database ID of the food item"
+                }
+              ]
+            },
+            "description": "Retrieve a single food item by its database ID. Returns 404 if not found. Requires authentication."
+          },
+          "response": []
+        },
+        {
+          "name": "Create User Food",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/foods",
+              "host": ["{{baseUrl}}"],
+              "path": ["foods"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"name\": \"Homemade granola bar\",\n  \"brand\": \"Homemade\",\n  \"energyKcal\": 420,\n  \"proteinG\": 8.5,\n  \"carbsG\": 58,\n  \"sugarsG\": 22,\n  \"fatG\": 16,\n  \"satFatG\": 3.2,\n  \"fiberG\": 4.5,\n  \"saltG\": 0.1,\n  \"servingSizeG\": 40\n}"
+            },
+            "description": "Create a user-contributed food label (source=USER, type=PACKAGED). The food is scoped to the authenticated user. Returns 201 with the created food. Requires authentication."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
