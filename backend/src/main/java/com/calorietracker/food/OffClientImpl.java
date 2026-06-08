@@ -2,6 +2,7 @@ package com.calorietracker.food;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Optional;
 
@@ -26,16 +27,21 @@ public class OffClientImpl implements OffClient {
 
     @Override
     public Optional<Food> fetchByBarcode(String ean) {
-        OffProductResponse response = restClient.get()
-                .uri("/api/v2/product/{ean}", ean)
-                .retrieve()
-                .body(OffProductResponse.class);
+        try {
+            OffProductResponse response = restClient.get()
+                    .uri("/api/v2/product/{ean}", ean)
+                    .retrieve()
+                    .body(OffProductResponse.class);
 
-        if (response == null || response.status() != 1 || response.product() == null) {
+            if (response == null || response.status() != 1 || response.product() == null) {
+                return Optional.empty();
+            }
+
+            return Optional.of(mapToFood(response.product(), ean));
+        } catch (RestClientResponseException ex) {
+            // OFF returns 4xx (e.g. 404) for unknown barcodes; treat any error response as not found
             return Optional.empty();
         }
-
-        return Optional.of(mapToFood(response.product(), ean));
     }
 
     private Food mapToFood(OffProductResponse.Product product, String ean) {
