@@ -194,6 +194,167 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Diary",
+      "description": "Diary entry management and offline sync. All requests require a Bearer token.",
+      "item": [
+        {
+          "name": "Create Diary Entry (Food)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/diary",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"entryDate\": \"2026-06-08\",\n  \"mealType\": \"BREAKFAST\",\n  \"sourceType\": \"FOOD\",\n  \"foodId\": 1,\n  \"quantity\": 150\n}"
+            },
+            "description": "Create a diary entry for a food portion. Nutrition (kcal/protein/carbs/fat) is snapshotted from the food's per-100g values scaled by quantity (grams). Returns 201 with the created entry."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Diary Entry (Recipe Portion)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/diary",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"entryDate\": \"2026-06-08\",\n  \"mealType\": \"LUNCH\",\n  \"sourceType\": \"RECIPE_PORTION\",\n  \"recipeId\": 1,\n  \"quantity\": 1\n}"
+            },
+            "description": "Create a diary entry for a recipe portion. Nutrition is calculated from the recipe's ingredients, divided by the number of portions, then multiplied by quantity (number of portions consumed)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Diary by Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/diary?date=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary"],
+              "query": [
+                { "key": "date", "value": "2026-06-08", "description": "ISO date (YYYY-MM-DD)" }
+              ]
+            },
+            "description": "Returns all non-deleted diary entries for the authenticated user on the given date."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Diary Entry",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/diary/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{diaryEntryId}}", "description": "UUID of the diary entry" }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "{\n  \"quantity\": 200,\n  \"mealType\": \"LUNCH\"\n}"
+            },
+            "description": "Updates the quantity and meal type of a diary entry and recalculates the nutrition snapshot. Returns 404 if the entry is not found or belongs to another user."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Diary Entry",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/diary/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary", ":id"],
+              "variable": [
+                { "key": "id", "value": "{{diaryEntryId}}", "description": "UUID of the diary entry" }
+              ]
+            },
+            "description": "Soft-deletes a diary entry (sets deleted=true). Returns 204 on success, 404 if not found or owned by another user."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Daily Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/diary/summary?date=2026-06-08",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary", "summary"],
+              "query": [
+                { "key": "date", "value": "2026-06-08", "description": "ISO date (YYYY-MM-DD)" }
+              ]
+            },
+            "description": "Returns daily and per-meal nutrition totals (kcal/protein/carbs/fat) compared against the user's daily kcal goal."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Changes Since Timestamp",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/diary/changes?since=2026-06-08T00:00:00Z",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary", "changes"],
+              "query": [
+                { "key": "since", "value": "2026-06-08T00:00:00Z", "description": "ISO-8601 timestamp. Returns all entries (including soft-deleted) modified after this point." }
+              ]
+            },
+            "description": "Returns all diary entries (including soft-deleted) modified after the given timestamp. Used to power the offline sync delta-pull."
+          },
+          "response": []
+        },
+        {
+          "name": "Sync (Batch Upsert)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/diary/sync",
+              "host": ["{{baseUrl}}"],
+              "path": ["diary", "sync"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": { "raw": { "language": "json" } },
+              "raw": "[\n  {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"entryDate\": \"2026-06-08\",\n    \"mealType\": \"BREAKFAST\",\n    \"sourceType\": \"FOOD\",\n    \"foodId\": 1,\n    \"quantity\": 150,\n    \"deleted\": false\n  }\n]"
+            },
+            "description": "Batch upsert diary entries from an offline sync payload. The client controls UUIDs so offline-generated IDs are preserved. New entries have nutrition snapshotted; existing entries are updated in-place. Returns the list of upserted entries."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
