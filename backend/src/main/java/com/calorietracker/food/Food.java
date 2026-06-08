@@ -34,7 +34,7 @@ public class Food {
     @Column(nullable = false)
     private FoodSource source;
 
-    @Column(name = "energy_kcal", nullable = false)
+    @Column(name = "energy_kcal")
     private Double energyKcal;
 
     @Column(name = "protein_g")
