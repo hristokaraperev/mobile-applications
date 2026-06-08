@@ -1,0 +1,32 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: calorietracker
+      POSTGRES_USER: calorietracker
+      POSTGRES_PASSWORD: calorietracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U calorietracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/calorietracker
+      SPRING_DATASOURCE_USERNAME: calorietracker
+      SPRING_DATASOURCE_PASSWORD: calorietracker
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

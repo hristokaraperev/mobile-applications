@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: calorie-tracker
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/calorietracker}
+    username: ${SPRING_DATASOURCE_USERNAME:calorietracker}
+    password: ${SPRING_DATASOURCE_PASSWORD:calorietracker}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
