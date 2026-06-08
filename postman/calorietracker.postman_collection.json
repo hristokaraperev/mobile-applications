@@ -2,7 +2,7 @@
   "info": {
     "name": "Calorie Tracker API",
     "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "description": "REST API collection for the Calorie Tracker backend. Import alongside calorietracker.postman_environment.json and set baseUrl to your server (default: http://localhost:8080).",
+    "description": "REST API collection for the Calorie Tracker backend. Import alongside calorietracker.postman_environment.json and select the \"Calorie Tracker — Local\" environment. After running Register or Login the accessToken is captured automatically.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -12,6 +12,16 @@
       "type": "string"
     }
   ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
     {
       "name": "Auth",
@@ -19,7 +29,24 @@
       "item": [
         {
           "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "    pm.environment.set('accessToken', json.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -41,27 +68,30 @@
               },
               "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"password123\",\n  \"displayName\": \"Alice\"\n}"
             },
-            "description": "Create a new user account. Returns a JWT access token and the created user's profile.\n\nValidation rules:\n- email: must be a valid email address\n- password: minimum 8 characters\n- displayName: optional"
+            "description": "Create a new user account. Returns a JWT access token and the created user's profile. The accessToken is automatically saved to the environment.\n\nValidation:\n- email: valid email address\n- password: minimum 8 characters\n- displayName: optional"
           },
-          "response": [
-            {
-              "name": "201 Created — successful registration",
-              "status": "Created",
-              "code": 201,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"alice@example.com\",\n    \"displayName\": \"Alice\"\n  }\n}",
-              "_postman_previewlanguage": "json"
-            }
-          ]
+          "response": []
         },
         {
           "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "    pm.environment.set('accessToken', json.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [
               {
@@ -83,23 +113,9 @@
               },
               "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"password123\"\n}"
             },
-            "description": "Authenticate with email and password. Returns a JWT access token and the user's profile.\n\nValidation rules:\n- email: must be a valid email address\n- password: required"
+            "description": "Authenticate with email and password. Returns a JWT access token and the user's profile. The accessToken is automatically saved to the environment."
           },
-          "response": [
-            {
-              "name": "200 OK — successful login",
-              "status": "OK",
-              "code": 200,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                }
-              ],
-              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"alice@example.com\",\n    \"displayName\": \"Alice\"\n  }\n}",
-              "_postman_previewlanguage": "json"
-            }
-          ]
+          "response": []
         }
       ]
     }
