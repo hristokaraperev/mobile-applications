@@ -71,6 +71,19 @@ public class DiaryService {
                 .toList();
     }
 
+    /**
+     * Soft-deletes the diary entry owned by {@code userId}. Throws 404 if not found or not owned by the user.
+     */
+    public void softDelete(UUID id, Long userId) {
+        DiaryEntry entry = diaryRepository.findById(id)
+                .filter(e -> e.getUserId().equals(userId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        entry.setDeleted(true);
+        entry.setUpdatedAt(OffsetDateTime.now());
+        diaryRepository.save(entry);
+    }
+
     private void snapshotFromFood(DiaryEntry entry, Long foodId, double quantityGrams) {
         Food food = foodRepository.findById(foodId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Food not found"));

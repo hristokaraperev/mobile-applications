@@ -145,6 +145,51 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    // ── DELETE /diary/{id} ───────────────────────────────────────────────────
+
+    @Test
+    void deleteEntry_withoutToken_returns401() throws Exception {
+        mockMvc.perform(delete("/diary/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteEntry_softDeletesAndExcludesFromGetByDate() throws Exception {
+        JsonNode created = objectMapper.readTree(postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0));
+        String id = created.get("id").asText();
+
+        mockMvc.perform(delete("/diary/{id}", id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        // Entry must not appear in date query after soft-delete
+        mockMvc.perform(get("/diary")
+                        .param("date", "2026-06-08")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void deleteEntry_forAnotherUsersEntry_returns404() throws Exception {
+        JsonNode created = objectMapper.readTree(postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0));
+        String id = created.get("id").asText();
+
+        String email2 = UUID.randomUUID() + "@example.com";
+        String reg2 = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", email2, "password", "s3cr3t!!"
+                        ))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token2 = objectMapper.readTree(reg2).get("accessToken").asText();
+
+        mockMvc.perform(delete("/diary/{id}", id)
+                        .header("Authorization", "Bearer " + token2))
+                .andExpect(status().isNotFound());
+    }
+
     // ── POST /diary RECIPE_PORTION ───────────────────────────────────────────
 
     @Test
