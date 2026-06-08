@@ -8,11 +8,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,6 +29,7 @@ class FoodControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @MockitoBean OffClient offClient;
 
     private String token;
 
@@ -182,6 +189,60 @@ class FoodControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].name").value(name));
     }
 
+    // ── barcode lookup ───────────────────────────────────────────────────────
+
+    @Test
+    void getByBarcode_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/foods/barcode/3017620422003"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getByBarcode_whenCachedInDb_returnsWithoutCallingOff() throws Exception {
+        String ean = "3017620422003";
+        long id = createFoodWithBarcode("Nutella", 539.0, ean);
+
+        mockMvc.perform(get("/foods/barcode/{ean}", ean)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.barcode").value(ean))
+                .andExpect(jsonPath("$.energyKcal").value(539.0));
+
+        verify(offClient, never()).fetchByBarcode(anyString());
+    }
+
+    @Test
+    void getByBarcode_whenNotInDb_callsOffAndPersistsResult() throws Exception {
+        String ean = "5000112637922";
+        Food offFood = buildOffFood("Coca-Cola", ean, 42.0);
+        when(offClient.fetchByBarcode(ean)).thenReturn(Optional.of(offFood));
+
+        mockMvc.perform(get("/foods/barcode/{ean}", ean)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Coca-Cola"))
+                .andExpect(jsonPath("$.barcode").value(ean))
+                .andExpect(jsonPath("$.source").value("OFF"))
+                .andExpect(jsonPath("$.type").value("PACKAGED"));
+
+        mockMvc.perform(get("/foods/barcode/{ean}", ean)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        verify(offClient, org.mockito.Mockito.times(1)).fetchByBarcode(ean);
+    }
+
+    @Test
+    void getByBarcode_whenNotFoundAnywhere_returns404() throws Exception {
+        String ean = "0000000000000";
+        when(offClient.fetchByBarcode(ean)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/foods/barcode/{ean}", ean)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private void createFood(String name, double energyKcal) throws Exception {
@@ -193,6 +254,32 @@ class FoodControllerTest extends AbstractIntegrationTest {
                                 "energyKcal", energyKcal
                         ))))
                 .andExpect(status().isCreated());
+    }
+
+    private long createFoodWithBarcode(String name, double energyKcal, String barcode) throws Exception {
+        String response = mockMvc.perform(post("/foods")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", name,
+                                "energyKcal", energyKcal,
+                                "barcode", barcode
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asLong();
+    }
+
+    private Food buildOffFood(String name, String barcode, double energyKcal) {
+        Food food = new Food();
+        food.setName(name);
+        food.setBarcode(barcode);
+        food.setSource(FoodSource.OFF);
+        food.setType(FoodType.PACKAGED);
+        food.setEnergyKcal(energyKcal);
+
+        return food;
     }
 
     private long createFoodAndGetId(String name, double energyKcal) throws Exception {

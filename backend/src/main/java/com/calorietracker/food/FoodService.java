@@ -17,9 +17,11 @@ public class FoodService {
     private static final int SEARCH_LIMIT = 50;
 
     private final FoodRepository foodRepository;
+    private final OffClient offClient;
 
-    public FoodService(FoodRepository foodRepository) {
+    public FoodService(FoodRepository foodRepository, OffClient offClient) {
         this.foodRepository = foodRepository;
+        this.offClient = offClient;
     }
 
     /**
@@ -36,6 +38,20 @@ public class FoodService {
     /** Returns a single food by its database ID, or 404 if not found. */
     public FoodResponse findById(Long id) {
         return foodRepository.findById(id)
+                .map(FoodResponse::from)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    /**
+     * Returns food by barcode EAN. Checks Postgres cache first; falls back to Open Food Facts.
+     * Persists the OFF result on a cache miss. Throws 404 if not found anywhere.
+     */
+    public FoodResponse lookupByBarcode(String ean) {
+        return foodRepository.findByBarcode(ean)
+                .or(() -> offClient.fetchByBarcode(ean).map(food -> {
+                    food.setUpdatedAt(OffsetDateTime.now());
+                    return foodRepository.save(food);
+                }))
                 .map(FoodResponse::from)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }

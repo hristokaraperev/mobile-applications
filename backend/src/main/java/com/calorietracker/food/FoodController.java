@@ -44,6 +44,16 @@ public class FoodController {
     }
 
     /**
+     * Returns food by EAN barcode. Serves from the Postgres cache if available;
+     * otherwise proxies Open Food Facts, persists the result, and returns it.
+     * Data sourced from OFF is licensed under ODbL (https://opendatacommons.org/licenses/odbl/).
+     */
+    @GetMapping("/barcode/{ean}")
+    public FoodResponse getByBarcode(@PathVariable String ean) {
+        return foodService.lookupByBarcode(ean);
+    }
+
+    /**
      * Creates a user-contributed food label scoped to the authenticated user.
      */
     @PostMapping

@@ -16,7 +16,13 @@ public class OpenApiConfig {
     OpenAPI calorieTrackerOpenApi() {
         return new OpenAPI().info(new Info()
                 .title("Calorie Tracker API")
-                .description("Personal calorie tracker — foods, recipes, and diary.")
+                .description("""
+                        Personal calorie tracker — foods, recipes, and diary.
+
+                        **Data attribution:** food data retrieved via `GET /foods/barcode/{ean}` \
+                        may originate from [Open Food Facts](https://world.openfoodfacts.org) \
+                        and is licensed under the \
+                        [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).""")
                 .version("v1"));
     }
 }
