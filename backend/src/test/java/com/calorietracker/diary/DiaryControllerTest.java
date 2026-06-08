@@ -101,6 +101,52 @@ class DiaryControllerTest extends AbstractIntegrationTest {
         UUID.fromString(json.get("id").asText());
     }
 
+    // ── GET /diary ───────────────────────────────────────────────────────────
+
+    @Test
+    void getDiaryByDate_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/diary").param("date", "2026-06-08"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getDiaryByDate_returnsEntriesForThatDateOnly() throws Exception {
+        postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0);
+        postDiaryEntry("2026-06-09", "LUNCH", foodId, 200.0);  // different date — must not appear
+
+        mockMvc.perform(get("/diary")
+                        .param("date", "2026-06-08")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].entryDate").value("2026-06-08"));
+    }
+
+    @Test
+    void getDiaryByDate_doesNotReturnOtherUsersEntries() throws Exception {
+        // Create an entry for the primary user
+        postDiaryEntry("2026-06-08", "DINNER", foodId, 100.0);
+
+        // Register a second user and query the same date
+        String email2 = UUID.randomUUID() + "@example.com";
+        String regResponse2 = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", email2, "password", "s3cr3t!!"
+                        ))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token2 = objectMapper.readTree(regResponse2).get("accessToken").asText();
+
+        mockMvc.perform(get("/diary")
+                        .param("date", "2026-06-08")
+                        .header("Authorization", "Bearer " + token2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    // ── POST /diary RECIPE_PORTION ───────────────────────────────────────────
+
     @Test
     void createEntry_recipePortionSource_snapshotsPerPortionNutrition() throws Exception {
         // Recipe: 2 portions. Ingredient: 200g of Apple (52 kcal, 0.3g protein, 14g carbs, 0.2g fat per 100g).
@@ -128,6 +174,21 @@ class DiaryControllerTest extends AbstractIntegrationTest {
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private String postDiaryEntry(String date, String mealType, Long forFoodId, double quantity) throws Exception {
+        return mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", date,
+                                "mealType", mealType,
+                                "sourceType", "FOOD",
+                                "foodId", forFoodId,
+                                "quantity", quantity
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+    }
 
     private Long createRecipe(int portions, Long ingredientFoodId, double ingredientGrams) {
         Recipe recipe = new Recipe();
