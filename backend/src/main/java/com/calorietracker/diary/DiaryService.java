@@ -6,13 +6,16 @@ import com.calorietracker.recipe.Recipe;
 import com.calorietracker.recipe.RecipeIngredient;
 import com.calorietracker.recipe.RecipeIngredientRepository;
 import com.calorietracker.recipe.RecipeRepository;
+import com.calorietracker.user.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -25,17 +28,20 @@ public class DiaryService {
     private final FoodRepository foodRepository;
     private final RecipeRepository recipeRepository;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final UserRepository userRepository;
 
     public DiaryService(
             DiaryRepository diaryRepository,
             FoodRepository foodRepository,
             RecipeRepository recipeRepository,
-            RecipeIngredientRepository recipeIngredientRepository
+            RecipeIngredientRepository recipeIngredientRepository,
+            UserRepository userRepository
     ) {
         this.diaryRepository = diaryRepository;
         this.foodRepository = foodRepository;
         this.recipeRepository = recipeRepository;
         this.recipeIngredientRepository = recipeIngredientRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -69,6 +75,48 @@ public class DiaryService {
                 .stream()
                 .map(DiaryEntryResponse::from)
                 .toList();
+    }
+
+    /**
+     * Returns per-meal and daily nutrition totals for the authenticated user on the given date.
+     */
+    public DiarySummaryResponse summary(Long userId, LocalDate date) {
+        List<DiaryEntry> entries = diaryRepository.findByUserIdAndEntryDateAndDeletedFalse(userId, date);
+
+        Integer dailyKcalGoal = userRepository.findById(userId)
+                .map(u -> u.getDailyKcalGoal())
+                .orElse(null);
+
+        Map<String, double[]> mealTotals = new LinkedHashMap<>();
+        double totalKcal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+
+        for (DiaryEntry e : entries) {
+            String meal = e.getMealType().name();
+            double[] t = mealTotals.computeIfAbsent(meal, k -> new double[4]);
+            t[0] += orZero(e.getKcal());
+            t[1] += orZero(e.getProteinG());
+            t[2] += orZero(e.getCarbsG());
+            t[3] += orZero(e.getFatG());
+            totalKcal += orZero(e.getKcal());
+            totalProtein += orZero(e.getProteinG());
+            totalCarbs += orZero(e.getCarbsG());
+            totalFat += orZero(e.getFatG());
+        }
+
+        Map<String, DiarySummaryResponse.MealTotals> meals = new LinkedHashMap<>();
+        mealTotals.forEach((meal, t) ->
+                meals.put(meal, new DiarySummaryResponse.MealTotals(
+                        round2(t[0]), round2(t[1]), round2(t[2]), round2(t[3])
+                ))
+        );
+
+        return new DiarySummaryResponse(date, dailyKcalGoal,
+                round2(totalKcal), round2(totalProtein), round2(totalCarbs), round2(totalFat),
+                meals);
+    }
+
+    private static double orZero(Double v) {
+        return v != null ? v : 0.0;
     }
 
     /**

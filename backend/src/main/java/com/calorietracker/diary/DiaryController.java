@@ -57,6 +57,17 @@ public class DiaryController {
     }
 
     /**
+     * Returns per-meal and daily nutrition totals for the authenticated user on the given date.
+     */
+    @GetMapping("/summary")
+    public DiarySummaryResponse summary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return diaryService.summary(userId, date);
+    }
+
+    /**
      * Updates quantity and meal type of a diary entry, recalculating the nutrition snapshot.
      */
     @PutMapping("/{id}")

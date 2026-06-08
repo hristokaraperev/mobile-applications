@@ -237,6 +237,30 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ── GET /diary/summary ───────────────────────────────────────────────────
+
+    @Test
+    void getDiarySummary_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/diary/summary").param("date", "2026-06-08"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getDiarySummary_returnsMealAndDailyTotals() throws Exception {
+        // 100g Apple → kcal=52 for BREAKFAST; 200g Apple → kcal=104 for LUNCH
+        postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0);
+        postDiaryEntry("2026-06-08", "LUNCH", foodId, 200.0);
+
+        mockMvc.perform(get("/diary/summary")
+                        .param("date", "2026-06-08")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.date").value("2026-06-08"))
+                .andExpect(jsonPath("$.totalKcal").value(156.0))
+                .andExpect(jsonPath("$.meals.BREAKFAST.kcal").value(52.0))
+                .andExpect(jsonPath("$.meals.LUNCH.kcal").value(104.0));
+    }
+
     // ── POST /diary RECIPE_PORTION ───────────────────────────────────────────
 
     @Test
