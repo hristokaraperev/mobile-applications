@@ -56,6 +56,18 @@ public class DiaryController {
         return diaryService.findByDate(userId, date);
     }
 
+    /**
+     * Updates quantity and meal type of a diary entry, recalculating the nutrition snapshot.
+     */
+    @PutMapping("/{id}")
+    public DiaryEntryResponse update(
+            @PathVariable UUID id,
+            @Valid @RequestBody UpdateDiaryEntryRequest req,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return diaryService.update(id, req, userId);
+    }
+
     /** Soft-deletes a diary entry owned by the authenticated user. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)

@@ -72,6 +72,28 @@ public class DiaryService {
     }
 
     /**
+     * Updates the quantity and meal type of a diary entry and recalculates the nutrition snapshot.
+     * Throws 404 if the entry is not found or not owned by {@code userId}.
+     */
+    public DiaryEntryResponse update(UUID id, UpdateDiaryEntryRequest req, Long userId) {
+        DiaryEntry entry = diaryRepository.findById(id)
+                .filter(e -> e.getUserId().equals(userId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        entry.setMealType(req.mealType());
+        entry.setQuantity(req.quantity());
+        entry.setUpdatedAt(OffsetDateTime.now());
+
+        if (entry.getSourceType() == DiarySourceType.FOOD) {
+            snapshotFromFood(entry, entry.getFoodId(), req.quantity());
+        } else {
+            snapshotFromRecipe(entry, entry.getRecipeId(), req.quantity());
+        }
+
+        return DiaryEntryResponse.from(diaryRepository.save(entry));
+    }
+
+    /**
      * Soft-deletes the diary entry owned by {@code userId}. Throws 404 if not found or not owned by the user.
      */
     public void softDelete(UUID id, Long userId) {

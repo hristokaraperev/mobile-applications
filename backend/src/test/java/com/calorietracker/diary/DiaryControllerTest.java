@@ -190,6 +190,53 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ── PUT /diary/{id} ──────────────────────────────────────────────────────
+
+    @Test
+    void updateEntry_updatesQuantityAndRecalculatesNutrition() throws Exception {
+        // Create entry: 100g Apple → kcal=52
+        JsonNode created = objectMapper.readTree(postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0));
+        String id = created.get("id").asText();
+
+        // Update to 200g → kcal should become 104
+        mockMvc.perform(put("/diary/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "quantity", 200.0,
+                                "mealType", "LUNCH"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.mealType").value("LUNCH"))
+                .andExpect(jsonPath("$.quantity").value(200.0))
+                .andExpect(jsonPath("$.kcal").value(104.0));
+    }
+
+    @Test
+    void updateEntry_forAnotherUsersEntry_returns404() throws Exception {
+        JsonNode created = objectMapper.readTree(postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0));
+        String id = created.get("id").asText();
+
+        String email2 = UUID.randomUUID() + "@example.com";
+        String reg2 = mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "email", email2, "password", "s3cr3t!!"
+                        ))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        String token2 = objectMapper.readTree(reg2).get("accessToken").asText();
+
+        mockMvc.perform(put("/diary/{id}", id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token2)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "quantity", 200.0,
+                                "mealType", "LUNCH"
+                        ))))
+                .andExpect(status().isNotFound());
+    }
+
     // ── POST /diary RECIPE_PORTION ───────────────────────────────────────────
 
     @Test
