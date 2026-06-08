@@ -58,6 +58,17 @@ public class DiaryController {
     }
 
     /**
+     * Batch upserts diary entries from an offline sync payload.
+     */
+    @PostMapping("/sync")
+    public List<DiaryEntryResponse> sync(
+            @Valid @RequestBody List<SyncDiaryEntryRequest> items,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return diaryService.sync(items, userId);
+    }
+
+    /**
      * Returns all entries (including soft-deleted) modified after {@code since} for offline sync.
      */
     @GetMapping("/changes")

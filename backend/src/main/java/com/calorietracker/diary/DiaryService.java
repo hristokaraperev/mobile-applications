@@ -116,6 +116,38 @@ public class DiaryService {
     }
 
     /**
+     * Batch upserts diary entries from an offline sync payload.
+     * New entries have their nutrition snapshotted; existing entries are updated in-place.
+     */
+    public List<DiaryEntryResponse> sync(List<SyncDiaryEntryRequest> items, Long userId) {
+        return items.stream().map(req -> {
+            DiaryEntry entry = diaryRepository.findById(req.id())
+                    .filter(e -> e.getUserId().equals(userId))
+                    .orElseGet(DiaryEntry::new);
+
+            boolean isNew = entry.getId() == null;
+            entry.setId(req.id());
+            entry.setUserId(userId);
+            entry.setEntryDate(req.entryDate());
+            entry.setMealType(req.mealType());
+            entry.setSourceType(req.sourceType());
+            entry.setQuantity(req.quantity());
+            entry.setDeleted(req.deleted());
+            entry.setUpdatedAt(OffsetDateTime.now());
+
+            if (isNew || entry.getSourceType() == DiarySourceType.FOOD) {
+                if (req.sourceType() == DiarySourceType.FOOD) {
+                    snapshotFromFood(entry, req.foodId(), req.quantity());
+                } else {
+                    snapshotFromRecipe(entry, req.recipeId(), req.quantity());
+                }
+            }
+
+            return DiaryEntryResponse.from(diaryRepository.save(entry));
+        }).toList();
+    }
+
+    /**
      * Returns all entries (including soft-deleted) for the authenticated user modified after {@code since}.
      */
     public List<DiaryEntryResponse> findChanges(Long userId, OffsetDateTime since) {

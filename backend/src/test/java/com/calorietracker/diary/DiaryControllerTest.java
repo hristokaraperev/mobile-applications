@@ -237,6 +237,61 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ── POST /diary/sync ─────────────────────────────────────────────────────
+
+    @Test
+    void sync_withoutToken_returns401() throws Exception {
+        mockMvc.perform(post("/diary/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("[]"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void sync_insertsNewEntriesAndUpdatesExisting() throws Exception {
+        // Create one existing entry via normal POST
+        JsonNode existing = objectMapper.readTree(postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0));
+        String existingId = existing.get("id").asText();
+
+        // Sync batch: update the existing entry + insert a brand new one
+        String newId = UUID.randomUUID().toString();
+        String syncBody = objectMapper.writeValueAsString(java.util.List.of(
+                Map.of(
+                        "id", existingId,
+                        "entryDate", "2026-06-08",
+                        "mealType", "LUNCH",        // changed
+                        "sourceType", "FOOD",
+                        "foodId", foodId,
+                        "quantity", 200.0,          // changed
+                        "deleted", false
+                ),
+                Map.of(
+                        "id", newId,
+                        "entryDate", "2026-06-09",
+                        "mealType", "DINNER",
+                        "sourceType", "FOOD",
+                        "foodId", foodId,
+                        "quantity", 150.0,
+                        "deleted", false
+                )
+        ));
+
+        mockMvc.perform(post("/diary/sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(syncBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2));
+
+        // Updated entry should reflect new quantity on subsequent GET
+        mockMvc.perform(get("/diary")
+                        .param("date", "2026-06-08")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].mealType").value("LUNCH"))
+                .andExpect(jsonPath("$[0].quantity").value(200.0));
+    }
+
     // ── GET /diary/changes ───────────────────────────────────────────────────
 
     @Test
