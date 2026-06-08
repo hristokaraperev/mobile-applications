@@ -1,8 +1,10 @@
 package com.calorietracker.food;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Optional;
 
@@ -13,13 +15,15 @@ import java.util.Optional;
 @Component
 public class OffClientImpl implements OffClient {
 
+    private static final Logger log = LoggerFactory.getLogger(OffClientImpl.class);
     private static final String BASE_URL = "https://world.openfoodfacts.org";
     private static final String USER_AGENT = "CalorieTracker/1.0 (info.karaperevi@gmail.com)";
 
     private final RestClient restClient;
 
-    public OffClientImpl() {
-        this.restClient = RestClient.builder()
+    /** Production constructor — Spring injects its auto-configured {@code RestClient.Builder}. */
+    public OffClientImpl(RestClient.Builder builder) {
+        this.restClient = builder
                 .baseUrl(BASE_URL)
                 .defaultHeader("User-Agent", USER_AGENT)
                 .build();
@@ -38,8 +42,8 @@ public class OffClientImpl implements OffClient {
             }
 
             return Optional.of(mapToFood(response.product(), ean));
-        } catch (RestClientResponseException ex) {
-            // OFF returns 4xx (e.g. 404) for unknown barcodes; treat any error response as not found
+        } catch (RestClientException ex) {
+            log.warn("OFF lookup failed for EAN {}: {}", ean, ex.getMessage());
             return Optional.empty();
         }
     }
