@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,6 +55,17 @@ public class DiaryController {
             @AuthenticationPrincipal Long userId
     ) {
         return diaryService.findByDate(userId, date);
+    }
+
+    /**
+     * Returns all entries (including soft-deleted) modified after {@code since} for offline sync.
+     */
+    @GetMapping("/changes")
+    public List<DiaryEntryResponse> changes(
+            @RequestParam OffsetDateTime since,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return diaryService.findChanges(userId, since);
     }
 
     /**

@@ -237,6 +237,51 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ── GET /diary/changes ───────────────────────────────────────────────────
+
+    @Test
+    void getChanges_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/diary/changes").param("since", "2026-01-01T00:00:00Z"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getChanges_returnsEntriesModifiedAfterTimestamp() throws Exception {
+        // Create entry before our reference point
+        postDiaryEntry("2026-06-08", "BREAKFAST", foodId, 100.0);
+
+        String since = java.time.OffsetDateTime.now().toString();
+
+        // Create entry after the reference point
+        postDiaryEntry("2026-06-08", "LUNCH", foodId, 200.0);
+
+        mockMvc.perform(get("/diary/changes")
+                        .param("since", since)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].mealType").value("LUNCH"));
+    }
+
+    @Test
+    void getChanges_includesSoftDeletedEntries() throws Exception {
+        String json = postDiaryEntry("2026-06-08", "DINNER", foodId, 100.0);
+        String id = objectMapper.readTree(json).get("id").asText();
+
+        String since = java.time.OffsetDateTime.now().toString();
+
+        mockMvc.perform(delete("/diary/{id}", id)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/diary/changes")
+                        .param("since", since)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].deleted").value(true));
+    }
+
     // ── GET /diary/summary ───────────────────────────────────────────────────
 
     @Test

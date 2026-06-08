@@ -115,6 +115,16 @@ public class DiaryService {
                 meals);
     }
 
+    /**
+     * Returns all entries (including soft-deleted) for the authenticated user modified after {@code since}.
+     */
+    public List<DiaryEntryResponse> findChanges(Long userId, OffsetDateTime since) {
+        return diaryRepository.findByUserIdAndUpdatedAtAfter(userId, since)
+                .stream()
+                .map(DiaryEntryResponse::from)
+                .toList();
+    }
+
     private static double orZero(Double v) {
         return v != null ? v : 0.0;
     }
