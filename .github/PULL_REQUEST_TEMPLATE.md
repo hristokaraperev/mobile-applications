@@ -12,10 +12,3 @@ Closes #<!-- issue number -->
 
 1. 
 2. 
-
----
-
-<!-- Copy the block below into the squash-merge commit message when merging. -->
-<!--
-<short one-line summary> | Closes #<issue-number> | PR #<pr-number>
--->

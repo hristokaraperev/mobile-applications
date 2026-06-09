@@ -25,7 +25,8 @@ public class SecurityConfig {
             "/v3/api-docs.yaml",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/auth/**"
+            "/auth/**",
+            "/error"
     };
 
     @Value("${app.cors.allowed-origins}")

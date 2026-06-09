@@ -166,6 +166,27 @@
           "response": []
         },
         {
+          "name": "Get Food by Barcode (OFF proxy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/foods/barcode/3017620422003",
+              "host": ["{{baseUrl}}"],
+              "path": ["foods", "barcode", "3017620422003"],
+              "variable": [
+                {
+                  "key": "ean",
+                  "value": "3017620422003",
+                  "description": "EAN-13 barcode (e.g. 3017620422003 for Nutella)"
+                }
+              ]
+            },
+            "description": "Retrieve a food by EAN barcode. Returns the cached Postgres row on repeated calls; on a cache miss proxies Open Food Facts, persists the result, and returns it. Returns 404 if the barcode is unknown. Requires authentication.\n\n**Attribution:** data sourced from Open Food Facts is licensed under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/)."
+          },
+          "response": []
+        },
+        {
           "name": "Create User Food",
           "request": {
             "method": "POST",
