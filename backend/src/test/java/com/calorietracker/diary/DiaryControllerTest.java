@@ -1,6 +1,10 @@
 package com.calorietracker.diary;
 
 import com.calorietracker.AbstractIntegrationTest;
+import com.calorietracker.food.Food;
+import com.calorietracker.food.FoodRepository;
+import com.calorietracker.food.FoodSource;
+import com.calorietracker.food.FoodType;
 import com.calorietracker.recipe.Recipe;
 import com.calorietracker.recipe.RecipeIngredient;
 import com.calorietracker.recipe.RecipeIngredientRepository;
@@ -32,6 +36,7 @@ class DiaryControllerTest extends AbstractIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired RecipeRepository recipeRepository;
     @Autowired RecipeIngredientRepository recipeIngredientRepository;
+    @Autowired FoodRepository foodRepository;
 
     private String token;
     private Long userId;
@@ -99,6 +104,31 @@ class DiaryControllerTest extends AbstractIntegrationTest {
         JsonNode json = objectMapper.readTree(response);
         // id must be a valid UUID
         UUID.fromString(json.get("id").asText());
+    }
+
+    @Test
+    void createEntry_foodSourceWithoutEnergyKcal_doesNotReturn500() throws Exception {
+        // Reproduces a CIQUAL-style food row with no energy value (V2 migration allows energy_kcal to be NULL).
+        Food food = new Food();
+        food.setName("Mystery Herb");
+        food.setType(FoodType.PACKAGED);
+        food.setSource(FoodSource.CIQUAL);
+        food.setEnergyKcal(null);
+        food.setUpdatedAt(OffsetDateTime.now());
+        Long noKcalFoodId = foodRepository.save(food).getId();
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "BREAKFAST",
+                                "sourceType", "FOOD",
+                                "foodId", noKcalFoodId,
+                                "quantity", 150.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kcal").value(0.0));
     }
 
     // ── GET /diary ───────────────────────────────────────────────────────────
@@ -387,6 +417,52 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.proteinG").value(0.3))
                 .andExpect(jsonPath("$.carbsG").value(14.0))
                 .andExpect(jsonPath("$.fatG").value(0.2));
+    }
+
+    @Test
+    void createEntry_recipePortionSource_halfPortionScalesNutrition() throws Exception {
+        // Per portion: kcal=52, protein=0.3, carbs=14, fat=0.2
+        // Logging 0.5 portions → half those values
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "LUNCH",
+                                "sourceType", "RECIPE_PORTION",
+                                "recipeId", recipeId,
+                                "quantity", 0.5
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kcal").value(26.0))
+                .andExpect(jsonPath("$.proteinG").value(0.15))
+                .andExpect(jsonPath("$.carbsG").value(7.0))
+                .andExpect(jsonPath("$.fatG").value(0.1));
+    }
+
+    @Test
+    void createEntry_recipePortionSource_doublePortionScalesNutrition() throws Exception {
+        // Per portion: kcal=52, protein=0.3, carbs=14, fat=0.2
+        // Logging 2 portions → double those values
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "LUNCH",
+                                "sourceType", "RECIPE_PORTION",
+                                "recipeId", recipeId,
+                                "quantity", 2.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kcal").value(104.0))
+                .andExpect(jsonPath("$.proteinG").value(0.6))
+                .andExpect(jsonPath("$.carbsG").value(28.0))
+                .andExpect(jsonPath("$.fatG").value(0.4));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
