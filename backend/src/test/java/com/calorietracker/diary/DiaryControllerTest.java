@@ -389,6 +389,52 @@ class DiaryControllerTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.fatG").value(0.2));
     }
 
+    @Test
+    void createEntry_recipePortionSource_halfPortionScalesNutrition() throws Exception {
+        // Per portion: kcal=52, protein=0.3, carbs=14, fat=0.2
+        // Logging 0.5 portions → half those values
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "LUNCH",
+                                "sourceType", "RECIPE_PORTION",
+                                "recipeId", recipeId,
+                                "quantity", 0.5
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kcal").value(26.0))
+                .andExpect(jsonPath("$.proteinG").value(0.15))
+                .andExpect(jsonPath("$.carbsG").value(7.0))
+                .andExpect(jsonPath("$.fatG").value(0.1));
+    }
+
+    @Test
+    void createEntry_recipePortionSource_doublePortionScalesNutrition() throws Exception {
+        // Per portion: kcal=52, protein=0.3, carbs=14, fat=0.2
+        // Logging 2 portions → double those values
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "LUNCH",
+                                "sourceType", "RECIPE_PORTION",
+                                "recipeId", recipeId,
+                                "quantity", 2.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kcal").value(104.0))
+                .andExpect(jsonPath("$.proteinG").value(0.6))
+                .andExpect(jsonPath("$.carbsG").value(28.0))
+                .andExpect(jsonPath("$.fatG").value(0.4));
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private String postDiaryEntry(String date, String mealType, Long forFoodId, double quantity) throws Exception {
