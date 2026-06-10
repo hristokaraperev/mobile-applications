@@ -2,9 +2,9 @@ package com.calorietracker.diary;
 
 import com.calorietracker.food.Food;
 import com.calorietracker.food.FoodRepository;
+import com.calorietracker.recipe.NutritionTotals;
 import com.calorietracker.recipe.Recipe;
-import com.calorietracker.recipe.RecipeIngredient;
-import com.calorietracker.recipe.RecipeIngredientRepository;
+import com.calorietracker.recipe.RecipeNutritionService;
 import com.calorietracker.recipe.RecipeRepository;
 import com.calorietracker.user.UserRepository;
 import org.springframework.http.HttpStatus;
@@ -27,20 +27,20 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final FoodRepository foodRepository;
     private final RecipeRepository recipeRepository;
-    private final RecipeIngredientRepository recipeIngredientRepository;
+    private final RecipeNutritionService recipeNutritionService;
     private final UserRepository userRepository;
 
     public DiaryService(
             DiaryRepository diaryRepository,
             FoodRepository foodRepository,
             RecipeRepository recipeRepository,
-            RecipeIngredientRepository recipeIngredientRepository,
+            RecipeNutritionService recipeNutritionService,
             UserRepository userRepository
     ) {
         this.diaryRepository = diaryRepository;
         this.foodRepository = foodRepository;
         this.recipeRepository = recipeRepository;
-        this.recipeIngredientRepository = recipeIngredientRepository;
+        this.recipeNutritionService = recipeNutritionService;
         this.userRepository = userRepository;
     }
 
@@ -211,25 +211,14 @@ public class DiaryService {
         Recipe recipe = recipeRepository.findById(recipeId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Recipe not found"));
 
-        List<RecipeIngredient> ingredients = recipeIngredientRepository.findByRecipeId(recipeId);
-
-        double totalKcal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
-        for (RecipeIngredient ing : ingredients) {
-            Food food = foodRepository.findById(ing.getFoodId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Ingredient food not found"));
-            double grams = ing.getGrams();
-            totalKcal += food.getEnergyKcal() * grams / 100.0;
-            if (food.getProteinG() != null) totalProtein += food.getProteinG() * grams / 100.0;
-            if (food.getCarbsG() != null) totalCarbs += food.getCarbsG() * grams / 100.0;
-            if (food.getFatG() != null) totalFat += food.getFatG() * grams / 100.0;
-        }
-
+        NutritionTotals total = recipeNutritionService.computeTotal(recipeId);
         int numberOfPortions = recipe.getNumberOfPortions();
+
         entry.setRecipeId(recipeId);
-        entry.setKcal(round2(totalKcal / numberOfPortions * portions));
-        entry.setProteinG(round2(totalProtein / numberOfPortions * portions));
-        entry.setCarbsG(round2(totalCarbs / numberOfPortions * portions));
-        entry.setFatG(round2(totalFat / numberOfPortions * portions));
+        entry.setKcal(round2(total.kcal() / numberOfPortions * portions));
+        entry.setProteinG(round2(total.proteinG() / numberOfPortions * portions));
+        entry.setCarbsG(round2(total.carbsG() / numberOfPortions * portions));
+        entry.setFatG(round2(total.fatG() / numberOfPortions * portions));
     }
 
     private static double round2(double value) {
