@@ -2,6 +2,7 @@ package com.calorietracker.recipe;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.OffsetDateTime;
@@ -54,6 +55,27 @@ public class RecipeService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         List<RecipeIngredient> ingredients = recipeIngredientRepository.findByRecipeId(id);
+
+        return toResponse(recipe, ingredients);
+    }
+
+    /**
+     * Replaces a recipe's fields and ingredients, recomputing nutrition totals.
+     * Throws 404 if not found, soft-deleted, or not owned by {@code userId}.
+     */
+    @Transactional
+    public RecipeResponse update(Long id, RecipeRequest req, Long userId) {
+        Recipe recipe = recipeRepository.findByIdAndUserIdAndDeletedFalse(id, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        recipe.setName(req.name());
+        recipe.setNumberOfPortions(req.numberOfPortions());
+        recipe.setTotalCookedWeightG(req.totalCookedWeightG());
+        recipe.setUpdatedAt(OffsetDateTime.now());
+        recipe = recipeRepository.save(recipe);
+
+        recipeIngredientRepository.deleteByRecipeId(id);
+        List<RecipeIngredient> ingredients = saveIngredients(id, req.ingredients());
 
         return toResponse(recipe, ingredients);
     }

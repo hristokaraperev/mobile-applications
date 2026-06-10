@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -126,6 +127,57 @@ class RecipeControllerTest extends AbstractIntegrationTest {
     void getRecipe_notFound_returns404() throws Exception {
         mockMvc.perform(get("/recipes/999999")
                         .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    // ── PUT /recipes/{id} ────────────────────────────────────────────────────
+
+    @Test
+    void updateRecipe_replacesIngredientsAndRecomputesTotals() throws Exception {
+        // Original: 200g Apple, 2 portions → total kcal=104, per portion kcal=52
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        // Updated: 400g Apple, 4 portions → total kcal=208, per portion kcal=52 (unchanged)
+        mockMvc.perform(put("/recipes/" + recipeId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Apple Salad v2",
+                                "numberOfPortions", 4,
+                                "ingredients", List.of(Map.of("foodId", foodId, "grams", 400.0))
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Apple Salad v2"))
+                .andExpect(jsonPath("$.numberOfPortions").value(4))
+                .andExpect(jsonPath("$.ingredients.length()").value(1))
+                .andExpect(jsonPath("$.ingredients[0].grams").value(400.0))
+                .andExpect(jsonPath("$.total.kcal").value(208.0))
+                .andExpect(jsonPath("$.total.proteinG").value(1.2))
+                .andExpect(jsonPath("$.total.carbsG").value(56.0))
+                .andExpect(jsonPath("$.total.fatG").value(0.8))
+                .andExpect(jsonPath("$.perPortion.kcal").value(52.0))
+                .andExpect(jsonPath("$.perPortion.proteinG").value(0.3))
+                .andExpect(jsonPath("$.perPortion.carbsG").value(14.0))
+                .andExpect(jsonPath("$.perPortion.fatG").value(0.2));
+
+        // GET reflects the update
+        mockMvc.perform(get("/recipes/" + recipeId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ingredients.length()").value(1))
+                .andExpect(jsonPath("$.total.kcal").value(208.0));
+    }
+
+    @Test
+    void updateRecipe_notFound_returns404() throws Exception {
+        mockMvc.perform(put("/recipes/999999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Apple Salad v2",
+                                "numberOfPortions", 4,
+                                "ingredients", List.of(Map.of("foodId", foodId, "grams", 400.0))
+                        ))))
                 .andExpect(status().isNotFound());
     }
 
