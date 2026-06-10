@@ -3,6 +3,8 @@ package com.calorietracker.recipe;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -32,5 +34,16 @@ public class RecipeController {
             @AuthenticationPrincipal Long userId
     ) {
         return recipeService.create(req, userId);
+    }
+
+    /**
+     * Returns a recipe with its ingredients and computed total/per-portion nutrition.
+     */
+    @GetMapping("/{id}")
+    public RecipeResponse getById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return recipeService.findById(id, userId);
     }
 }

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -90,7 +91,60 @@ class RecipeControllerTest extends AbstractIntegrationTest {
         assert json.get("id").isIntegralNumber();
     }
 
+    // ── GET /recipes/{id} ────────────────────────────────────────────────────
+
+    @Test
+    void getRecipe_withoutToken_returns401() throws Exception {
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(get("/recipes/" + recipeId))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getRecipe_returnsRecipeWithIngredientsAndNutrition() throws Exception {
+        // 200g of Apple (52 kcal, 0.3g protein, 14g carbs, 0.2g fat per 100g), split into 2 portions.
+        // Total: kcal=104, protein=0.6, carbs=28, fat=0.4 — Per portion: kcal=52, protein=0.3, carbs=14, fat=0.2
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(get("/recipes/" + recipeId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(recipeId))
+                .andExpect(jsonPath("$.name").value("Apple Salad"))
+                .andExpect(jsonPath("$.numberOfPortions").value(2))
+                .andExpect(jsonPath("$.ingredients[0].foodId").value(foodId))
+                .andExpect(jsonPath("$.ingredients[0].grams").value(200.0))
+                .andExpect(jsonPath("$.total.kcal").value(104.0))
+                .andExpect(jsonPath("$.perPortion.kcal").value(52.0))
+                .andExpect(jsonPath("$.perPortion.proteinG").value(0.3))
+                .andExpect(jsonPath("$.perPortion.carbsG").value(14.0))
+                .andExpect(jsonPath("$.perPortion.fatG").value(0.2));
+    }
+
+    @Test
+    void getRecipe_notFound_returns404() throws Exception {
+        mockMvc.perform(get("/recipes/999999")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private Long createRecipe(int numberOfPortions, Long ingredientFoodId, double grams) throws Exception {
+        String response = mockMvc.perform(post("/recipes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Apple Salad",
+                                "numberOfPortions", numberOfPortions,
+                                "ingredients", List.of(Map.of("foodId", ingredientFoodId, "grams", grams))
+                        ))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asLong();
+    }
 
     private Long createFood(String name, double kcal, double proteinG, double carbsG, double fatG) throws Exception {
         String response = mockMvc.perform(post("/foods")
