@@ -80,6 +80,19 @@ public class RecipeService {
         return toResponse(recipe, ingredients);
     }
 
+    /**
+     * Soft-deletes a recipe owned by {@code userId}.
+     * Throws 404 if not found, already soft-deleted, or not owned by {@code userId}.
+     */
+    public void softDelete(Long id, Long userId) {
+        Recipe recipe = recipeRepository.findByIdAndUserIdAndDeletedFalse(id, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        recipe.setDeleted(true);
+        recipe.setUpdatedAt(OffsetDateTime.now());
+        recipeRepository.save(recipe);
+    }
+
     private List<RecipeIngredient> saveIngredients(Long recipeId, List<RecipeIngredientRequest> requests) {
         return requests.stream().map(req -> {
             RecipeIngredient ingredient = new RecipeIngredient();

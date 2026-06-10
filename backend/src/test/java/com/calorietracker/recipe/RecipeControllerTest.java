@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -178,6 +179,28 @@ class RecipeControllerTest extends AbstractIntegrationTest {
                                 "numberOfPortions", 4,
                                 "ingredients", List.of(Map.of("foodId", foodId, "grams", 400.0))
                         ))))
+                .andExpect(status().isNotFound());
+    }
+
+    // ── DELETE /recipes/{id} ─────────────────────────────────────────────────
+
+    @Test
+    void deleteRecipe_softDeletesAndGetReturns404() throws Exception {
+        Long recipeId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(delete("/recipes/" + recipeId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/recipes/" + recipeId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteRecipe_notFound_returns404() throws Exception {
+        mockMvc.perform(delete("/recipes/999999")
+                        .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
     }
 

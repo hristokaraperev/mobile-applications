@@ -3,6 +3,7 @@ package com.calorietracker.recipe;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,5 +59,15 @@ public class RecipeController {
             @AuthenticationPrincipal Long userId
     ) {
         return recipeService.update(id, req, userId);
+    }
+
+    /** Soft-deletes a recipe owned by the authenticated user. */
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId
+    ) {
+        recipeService.softDelete(id, userId);
     }
 }
