@@ -47,6 +47,15 @@ public class RecipeService {
     }
 
     /**
+     * Returns all non-deleted recipes owned by {@code userId}, including ingredients and computed nutrition.
+     */
+    public List<RecipeResponse> findAll(Long userId) {
+        return recipeRepository.findByUserIdAndDeletedFalse(userId).stream()
+                .map(recipe -> toResponse(recipe, recipeIngredientRepository.findByRecipeId(recipe.getId())))
+                .toList();
+    }
+
+    /**
      * Returns a recipe owned by {@code userId}, including ingredients and computed nutrition.
      * Throws 404 if not found, soft-deleted, or not owned by {@code userId}.
      */

@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * REST endpoints for recipe management. All endpoints require authentication.
  */
@@ -36,6 +38,14 @@ public class RecipeController {
             @AuthenticationPrincipal Long userId
     ) {
         return recipeService.create(req, userId);
+    }
+
+    /**
+     * Returns all non-deleted recipes owned by the authenticated user.
+     */
+    @GetMapping
+    public List<RecipeResponse> list(@AuthenticationPrincipal Long userId) {
+        return recipeService.findAll(userId);
     }
 
     /**

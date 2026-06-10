@@ -204,6 +204,30 @@ class RecipeControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ── GET /recipes ─────────────────────────────────────────────────────────
+
+    @Test
+    void listRecipes_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/recipes"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void listRecipes_excludesDeletedRecipes() throws Exception {
+        Long keptId = createRecipe(2, foodId, 200.0);
+        Long deletedId = createRecipe(2, foodId, 200.0);
+
+        mockMvc.perform(delete("/recipes/" + deletedId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/recipes")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + keptId + ")]").exists())
+                .andExpect(jsonPath("$[?(@.id == " + deletedId + ")]").doesNotExist());
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private Long createRecipe(int numberOfPortions, Long ingredientFoodId, double grams) throws Exception {
