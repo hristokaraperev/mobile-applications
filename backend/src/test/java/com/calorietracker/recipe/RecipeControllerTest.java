@@ -1,6 +1,10 @@
 package com.calorietracker.recipe;
 
 import com.calorietracker.AbstractIntegrationTest;
+import com.calorietracker.food.Food;
+import com.calorietracker.food.FoodRepository;
+import com.calorietracker.food.FoodSource;
+import com.calorietracker.food.FoodType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +31,7 @@ class RecipeControllerTest extends AbstractIntegrationTest {
 
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
+    @Autowired FoodRepository foodRepository;
 
     private String token;
     private Long foodId;
@@ -91,6 +97,31 @@ class RecipeControllerTest extends AbstractIntegrationTest {
 
         JsonNode json = objectMapper.readTree(response);
         assert json.get("id").isIntegralNumber();
+    }
+
+    @Test
+    void createRecipe_ingredientWithoutEnergyKcal_treatsItAsZero() throws Exception {
+        // Reproduces a CIQUAL-style food row with no energy value (V2 migration allows energy_kcal to be NULL).
+        Food food = new Food();
+        food.setName("Mystery Herb");
+        food.setType(FoodType.PACKAGED);
+        food.setSource(FoodSource.CIQUAL);
+        food.setEnergyKcal(null);
+        food.setProteinG(1.0);
+        food.setUpdatedAt(OffsetDateTime.now());
+        Long noKcalFoodId = foodRepository.save(food).getId();
+
+        mockMvc.perform(post("/recipes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "name", "Herb Salad",
+                                "numberOfPortions", 1,
+                                "ingredients", List.of(Map.of("foodId", noKcalFoodId, "grams", 100.0))
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total.kcal").value(0.0))
+                .andExpect(jsonPath("$.total.proteinG").value(1.0));
     }
 
     // ── GET /recipes/{id} ────────────────────────────────────────────────────

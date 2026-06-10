@@ -36,7 +36,7 @@ public class RecipeNutritionService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Ingredient food not found"));
             double grams = ingredient.getGrams();
 
-            kcal += food.getEnergyKcal() * grams / 100.0;
+            if (food.getEnergyKcal() != null) kcal += food.getEnergyKcal() * grams / 100.0;
             if (food.getProteinG() != null) protein += food.getProteinG() * grams / 100.0;
             if (food.getCarbsG() != null) carbs += food.getCarbsG() * grams / 100.0;
             if (food.getFatG() != null) fat += food.getFatG() * grams / 100.0;

@@ -1,6 +1,10 @@
 package com.calorietracker.diary;
 
 import com.calorietracker.AbstractIntegrationTest;
+import com.calorietracker.food.Food;
+import com.calorietracker.food.FoodRepository;
+import com.calorietracker.food.FoodSource;
+import com.calorietracker.food.FoodType;
 import com.calorietracker.recipe.Recipe;
 import com.calorietracker.recipe.RecipeIngredient;
 import com.calorietracker.recipe.RecipeIngredientRepository;
@@ -32,6 +36,7 @@ class DiaryControllerTest extends AbstractIntegrationTest {
     @Autowired ObjectMapper objectMapper;
     @Autowired RecipeRepository recipeRepository;
     @Autowired RecipeIngredientRepository recipeIngredientRepository;
+    @Autowired FoodRepository foodRepository;
 
     private String token;
     private Long userId;
@@ -99,6 +104,31 @@ class DiaryControllerTest extends AbstractIntegrationTest {
         JsonNode json = objectMapper.readTree(response);
         // id must be a valid UUID
         UUID.fromString(json.get("id").asText());
+    }
+
+    @Test
+    void createEntry_foodSourceWithoutEnergyKcal_doesNotReturn500() throws Exception {
+        // Reproduces a CIQUAL-style food row with no energy value (V2 migration allows energy_kcal to be NULL).
+        Food food = new Food();
+        food.setName("Mystery Herb");
+        food.setType(FoodType.PACKAGED);
+        food.setSource(FoodSource.CIQUAL);
+        food.setEnergyKcal(null);
+        food.setUpdatedAt(OffsetDateTime.now());
+        Long noKcalFoodId = foodRepository.save(food).getId();
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "BREAKFAST",
+                                "sourceType", "FOOD",
+                                "foodId", noKcalFoodId,
+                                "quantity", 150.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kcal").value(0.0));
     }
 
     // ── GET /diary ───────────────────────────────────────────────────────────
