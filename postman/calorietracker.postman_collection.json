@@ -217,6 +217,131 @@
       ]
     },
     {
+      "name": "Recipes",
+      "description": "Recipe management with computed total and per-portion nutrition. All requests require a Bearer token.",
+      "item": [
+        {
+          "name": "Create Recipe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recipes",
+              "host": ["{{baseUrl}}"],
+              "path": ["recipes"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"name\": \"Apple Salad\",\n  \"numberOfPortions\": 2,\n  \"totalCookedWeightG\": 350,\n  \"ingredients\": [\n    {\n      \"foodId\": 1,\n      \"grams\": 200\n    }\n  ]\n}"
+            },
+            "description": "Creates a recipe with its ingredients. Returns 201 with the recipe, including computed total and per-portion nutrition (kcal/protein/carbs/fat)."
+          },
+          "response": []
+        },
+        {
+          "name": "List Recipes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/recipes",
+              "host": ["{{baseUrl}}"],
+              "path": ["recipes"]
+            },
+            "description": "Returns all non-deleted recipes owned by the authenticated user, each with computed total and per-portion nutrition."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recipe by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/recipes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["recipes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{recipeId}}",
+                  "description": "ID of the recipe"
+                }
+              ]
+            },
+            "description": "Returns a recipe with its ingredients and computed total/per-portion nutrition. Returns 404 if not found or owned by another user."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Recipe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/recipes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["recipes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{recipeId}}",
+                  "description": "ID of the recipe"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"name\": \"Apple Salad\",\n  \"numberOfPortions\": 4,\n  \"totalCookedWeightG\": 700,\n  \"ingredients\": [\n    {\n      \"foodId\": 1,\n      \"grams\": 400\n    }\n  ]\n}"
+            },
+            "description": "Replaces the recipe's fields and ingredients, recomputing total and per-portion nutrition. Returns 404 if not found or owned by another user."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Recipe",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/recipes/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["recipes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{recipeId}}",
+                  "description": "ID of the recipe"
+                }
+              ]
+            },
+            "description": "Soft-deletes a recipe (sets deleted=true). Returns 204 on success, 404 if not found or owned by another user."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Diary",
       "description": "Diary entry management and offline sync. All requests require a Bearer token.",
       "item": [
