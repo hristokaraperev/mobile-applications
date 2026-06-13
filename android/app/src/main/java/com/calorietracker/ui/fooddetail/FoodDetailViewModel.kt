@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.calorietracker.data.diary.DiaryRepository
 import com.calorietracker.data.diary.MealType
 import com.calorietracker.data.food.FoodDto
+import com.calorietracker.data.diary.LogEntryResult
 import com.calorietracker.data.food.FoodLookupResult
 import com.calorietracker.data.food.FoodRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,13 +25,16 @@ import kotlin.math.roundToLong
  * @property quantityText the raw grams input, kept verbatim for the text field.
  * @property mealType the meal the entry will be logged to.
  * @property previewKcal kcal for the current quantity, matching the server's portion math.
+ * @property saved the entry was logged; the screen should navigate back.
  */
 data class FoodDetailUiState(
     val food: FoodDto? = null,
     val isLoading: Boolean = false,
+    val isSaving: Boolean = false,
     val quantityText: String = DEFAULT_QUANTITY,
     val mealType: MealType = MealType.BREAKFAST,
     val previewKcal: Double = 0.0,
+    val saved: Boolean = false,
     val errorMessage: String? = null,
 ) {
     companion object {
@@ -69,6 +74,34 @@ class FoodDetailViewModel @Inject constructor(
     /** Updates the grams [value] and recomputes the kcal preview. */
     fun onQuantityChange(value: String) {
         _uiState.update { it.copy(quantityText = value, previewKcal = preview(it.food, value)) }
+    }
+
+    /** Changes the meal the entry will be logged to. */
+    fun onMealTypeChange(mealType: MealType) {
+        _uiState.update { it.copy(mealType = mealType) }
+    }
+
+    /** Logs the current food and quantity to the diary on [entryDate]. */
+    fun save(entryDate: LocalDate) {
+        val state = _uiState.value
+        val food = state.food ?: return
+        val quantity = state.quantityText.toDoubleOrNull()
+        if (quantity == null || quantity <= 0.0) {
+            _uiState.update { it.copy(errorMessage = "Enter a quantity greater than 0.") }
+
+            return
+        }
+
+        _uiState.update { it.copy(isSaving = true, errorMessage = null) }
+        viewModelScope.launch {
+            when (val result = diaryRepository.logFood(entryDate, state.mealType, food.id, quantity)) {
+                is LogEntryResult.Success ->
+                    _uiState.update { it.copy(isSaving = false, saved = true) }
+
+                is LogEntryResult.Failure ->
+                    _uiState.update { it.copy(isSaving = false, errorMessage = result.message) }
+            }
+        }
     }
 
     /** kcal for [grams] of [food], matching the server's per-100 g math rounded to 2 dp. */

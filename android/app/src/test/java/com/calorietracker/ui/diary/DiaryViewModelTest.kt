@@ -1,5 +1,6 @@
 package com.calorietracker.ui.diary
 
+import com.calorietracker.data.diary.CreateDiaryEntryRequest
 import com.calorietracker.data.diary.DiaryApi
 import com.calorietracker.data.diary.DiaryEntryDto
 import com.calorietracker.data.diary.DiaryRepository
@@ -29,6 +30,7 @@ class DiaryViewModelTest {
         private val entries: List<DiaryEntryDto> = emptyList(),
         private val summary: DiarySummaryDto,
     ) : DiaryApi {
+        override suspend fun create(request: CreateDiaryEntryRequest): DiaryEntryDto = error("not used")
         override suspend fun entries(date: String): List<DiaryEntryDto> = entries
         override suspend fun summary(date: String): DiarySummaryDto = summary
     }
@@ -37,6 +39,7 @@ class DiaryViewModelTest {
     private class DateKeyedDiaryApi(
         private val totalsByDate: Map<String, Double>,
     ) : DiaryApi {
+        override suspend fun create(request: CreateDiaryEntryRequest): DiaryEntryDto = error("not used")
         override suspend fun entries(date: String): List<DiaryEntryDto> = emptyList()
         override suspend fun summary(date: String): DiarySummaryDto =
             DiarySummaryDto(date = date, totalKcal = totalsByDate.getValue(date))

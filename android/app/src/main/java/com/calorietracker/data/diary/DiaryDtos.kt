@@ -32,6 +32,20 @@ data class DiarySummaryDto(
     val meals: Map<String, MealTotalsDto> = emptyMap(),
 )
 
+/**
+ * Request body for `POST /diary`. Nutrition is snapshotted server-side from the
+ * referenced food or recipe; [quantity] is grams for foods, portions for recipes.
+ */
+@Serializable
+data class CreateDiaryEntryRequest(
+    val entryDate: String,
+    val mealType: String,
+    val sourceType: String,
+    val foodId: Long? = null,
+    val recipeId: Long? = null,
+    val quantity: Double,
+)
+
 /** Nutrition totals for a single meal type within a [DiarySummaryDto]. */
 @Serializable
 data class MealTotalsDto(

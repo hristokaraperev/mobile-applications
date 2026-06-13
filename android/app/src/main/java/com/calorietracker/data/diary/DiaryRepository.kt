@@ -1,5 +1,7 @@
 package com.calorietracker.data.diary
 
+import retrofit2.HttpException
+import java.io.IOException
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -10,7 +12,17 @@ data class DiaryDay(
     val summary: DiarySummaryDto,
 )
 
-/** Fetches a day's diary entries and totals from the API. */
+/** Outcome of logging a diary entry. */
+sealed interface LogEntryResult {
+
+    /** The entry was created. */
+    data object Success : LogEntryResult
+
+    /** Logging failed; [message] is suitable for display to the user. */
+    data class Failure(val message: String) : LogEntryResult
+}
+
+/** Fetches a day's diary entries and totals, and logs new entries, via the API. */
 class DiaryRepository @Inject constructor(
     private val api: DiaryApi,
 ) {
@@ -25,4 +37,29 @@ class DiaryRepository @Inject constructor(
             summary = api.summary(iso),
         )
     }
+
+    /** Logs [quantityGrams] of food [foodId] to [mealType] on [entryDate]. */
+    suspend fun logFood(
+        entryDate: LocalDate,
+        mealType: MealType,
+        foodId: Long,
+        quantityGrams: Double,
+    ): LogEntryResult =
+        try {
+            api.create(
+                CreateDiaryEntryRequest(
+                    entryDate = entryDate.toString(),
+                    mealType = mealType.name,
+                    sourceType = "FOOD",
+                    foodId = foodId,
+                    quantity = quantityGrams,
+                )
+            )
+
+            LogEntryResult.Success
+        } catch (e: HttpException) {
+            LogEntryResult.Failure("Could not save this entry. Please try again.")
+        } catch (e: IOException) {
+            LogEntryResult.Failure("Could not reach the server. Check your connection.")
+        }
 }
