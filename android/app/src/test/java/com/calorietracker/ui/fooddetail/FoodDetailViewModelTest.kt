@@ -6,6 +6,7 @@ import com.calorietracker.data.diary.DiaryEntryDto
 import com.calorietracker.data.diary.DiaryRepository
 import com.calorietracker.data.diary.DiarySummaryDto
 import com.calorietracker.data.diary.MealType
+import com.calorietracker.data.food.CreateFoodRequest
 import com.calorietracker.data.food.FoodApi
 import com.calorietracker.data.food.FoodDto
 import com.calorietracker.data.food.FoodRepository
@@ -32,6 +33,8 @@ class FoodDetailViewModelTest {
     private class FakeFoodApi(private val food: FoodDto) : FoodApi {
         override suspend fun search(query: String): List<FoodDto> = error("not used")
         override suspend fun getById(id: Long): FoodDto = food
+        override suspend fun getByBarcode(ean: String): FoodDto = error("not used")
+        override suspend fun create(request: CreateFoodRequest): FoodDto = error("not used")
     }
 
     /** Diary API that records the create request it receives. */

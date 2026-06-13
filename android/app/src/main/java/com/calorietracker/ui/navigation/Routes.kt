@@ -18,6 +18,7 @@ object Routes {
 
     /** Key under which the reused food-search flow returns a picked ingredient to the editor. */
     const val RESULT_INGREDIENT_FOOD_ID = "ingredientFoodId"
+    const val ARG_BARCODE = "barcode"
 
     /** Food search, scoped to the meal and date the user is adding to. */
     const val FOOD_SEARCH = "foodSearch/{$ARG_MEAL_TYPE}/{$ARG_DATE}"
@@ -34,6 +35,11 @@ object Routes {
 
     /** Log-a-portion for a given recipe. */
     const val LOG_PORTION = "logPortion/{$ARG_RECIPE_ID}"
+    /** Barcode scanner, carrying the meal and date a scanned food will be logged to. */
+    const val SCANNER = "scanner/{$ARG_MEAL_TYPE}/{$ARG_DATE}"
+
+    /** Custom-food form; [ARG_BARCODE] is optional and pre-fills the label when present. */
+    const val CUSTOM_FOOD = "customFood/{$ARG_MEAL_TYPE}/{$ARG_DATE}?$ARG_BARCODE={$ARG_BARCODE}"
 
     /** Concrete food-search route for [mealType] on [date]. */
     fun foodSearch(mealType: MealType, date: LocalDate): String =
@@ -48,4 +54,14 @@ object Routes {
 
     /** Concrete log-a-portion route for [recipeId]. */
     fun logPortion(recipeId: Long): String = "logPortion/$recipeId"
+    /** Concrete scanner route for [mealType] on [date]. */
+    fun scanner(mealType: MealType, date: LocalDate): String =
+        "scanner/${mealType.name}/$date"
+
+    /** Concrete custom-food route for [mealType] on [date], optionally pre-filling [barcode]. */
+    fun customFood(mealType: MealType, date: LocalDate, barcode: String? = null): String {
+        val base = "customFood/${mealType.name}/$date"
+
+        return if (barcode.isNullOrBlank()) base else "$base?$ARG_BARCODE=$barcode"
+    }
 }
