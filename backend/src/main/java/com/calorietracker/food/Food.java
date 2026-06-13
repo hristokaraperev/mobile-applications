@@ -11,6 +11,10 @@ import jakarta.persistence.Table;
 
 import java.time.OffsetDateTime;
 
+/**
+ * A food item with per-100g nutrition data, sourced either from an external database
+ * (Open Food Facts, CIQUAL) or created by a user.
+ */
 @Entity
 @Table(name = "foods")
 public class Food {
@@ -24,6 +28,7 @@ public class Food {
 
     private String brand;
 
+    /** EAN/UPC barcode used to look up packaged foods scanned via the Android client. */
     private String barcode;
 
     @Enumerated(EnumType.STRING)
@@ -34,33 +39,43 @@ public class Food {
     @Column(nullable = false)
     private FoodSource source;
 
+    /** Energy per 100g, in kcal. */
     @Column(name = "energy_kcal")
     private Double energyKcal;
 
+    /** Protein per 100g, in grams. */
     @Column(name = "protein_g")
     private Double proteinG;
 
+    /** Carbohydrates per 100g, in grams. */
     @Column(name = "carbs_g")
     private Double carbsG;
 
+    /** Sugars per 100g, in grams. */
     @Column(name = "sugars_g")
     private Double sugarsG;
 
+    /** Fat per 100g, in grams. */
     @Column(name = "fat_g")
     private Double fatG;
 
+    /** Saturated fat per 100g, in grams. */
     @Column(name = "sat_fat_g")
     private Double satFatG;
 
+    /** Fiber per 100g, in grams. */
     @Column(name = "fiber_g")
     private Double fiberG;
 
+    /** Salt per 100g, in grams. */
     @Column(name = "salt_g")
     private Double saltG;
 
+    /** Reference serving size in grams, used to suggest a default portion. */
     @Column(name = "serving_size_g")
     private Double servingSizeG;
 
+    /** ID of the user who created this food; {@code null} for foods from external sources. */
     @Column(name = "owner_user_id")
     private Long ownerUserId;
 

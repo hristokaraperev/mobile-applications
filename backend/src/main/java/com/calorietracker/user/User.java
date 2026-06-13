@@ -9,6 +9,9 @@ import jakarta.persistence.Table;
 
 import java.time.OffsetDateTime;
 
+/**
+ * A registered user account.
+ */
 @Entity
 @Table(name = "users")
 public class User {
@@ -20,12 +23,14 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    /** BCrypt hash of the user's password; never the plaintext password. */
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
     @Column(name = "display_name")
     private String displayName;
 
+    /** Target daily energy intake in kcal, used for the diary's daily summary. */
     @Column(name = "daily_kcal_goal")
     private Integer dailyKcalGoal;
 
