@@ -9,10 +9,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,11 +36,14 @@ private val dateLabelFormat = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.g
 /**
  * Home/Diary screen: a date selector, the four meal sections with their entries
  * and per-meal kcal, and a daily total against the user's goal. Tapping a meal's
- * "+" opens Food search for that meal and date via [onAddFood].
+ * "+" opens Food search for that meal and date via [onAddFood]; the app bar's
+ * profile action opens the Profile screen via [onOpenProfile].
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiaryScreen(
     onAddFood: (MealType, LocalDate) -> Unit,
+    onOpenProfile: () -> Unit,
     viewModel: DiaryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,25 +53,38 @@ fun DiaryScreen(
         viewModel.load(state.date)
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        DateSelector(
-            date = state.date,
-            onPrevious = viewModel::previousDay,
-            onNext = viewModel::nextDay,
-        )
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Diary") },
+                actions = {
+                    IconButton(onClick = onOpenProfile) {
+                        Text("⚙", style = MaterialTheme.typography.titleLarge)
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            DateSelector(
+                date = state.date,
+                onPrevious = viewModel::previousDay,
+                onNext = viewModel::nextDay,
+            )
 
-        DailyTotal(totalKcal = state.totalKcal, goal = state.dailyKcalGoal)
+            DailyTotal(totalKcal = state.totalKcal, goal = state.dailyKcalGoal)
 
-        state.errorMessage?.let { message ->
-            Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
-        }
+            state.errorMessage?.let { message ->
+                Text(message, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 8.dp))
+            }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            items(state.meals, key = { it.mealType }) { section ->
-                MealCard(section = section, onAdd = { onAddFood(section.mealType, state.date) })
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(state.meals, key = { it.mealType }) { section ->
+                    MealCard(section = section, onAdd = { onAddFood(section.mealType, state.date) })
+                }
             }
         }
     }

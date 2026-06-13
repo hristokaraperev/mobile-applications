@@ -8,6 +8,7 @@ object Routes {
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val DIARY = "diary"
+    const val PROFILE = "profile"
 
     const val ARG_MEAL_TYPE = "mealType"
     const val ARG_DATE = "date"

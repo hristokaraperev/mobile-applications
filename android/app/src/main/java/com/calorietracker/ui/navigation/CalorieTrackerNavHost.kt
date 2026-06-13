@@ -13,6 +13,7 @@ import com.calorietracker.ui.auth.RegisterScreen
 import com.calorietracker.ui.diary.DiaryScreen
 import com.calorietracker.ui.fooddetail.FoodDetailScreen
 import com.calorietracker.ui.foodsearch.FoodSearchScreen
+import com.calorietracker.ui.profile.ProfileScreen
 import java.time.LocalDate
 
 /**
@@ -41,6 +42,13 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
                 onAddFood = { mealType, date ->
                     navController.navigate(Routes.foodSearch(mealType, date))
                 },
+                onOpenProfile = { navController.navigate(Routes.PROFILE) },
+            )
+        }
+        composable(Routes.PROFILE) {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLogin() },
             )
         }
         composable(
@@ -83,6 +91,14 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
 private fun NavHostController.toDiary() {
     navigate(Routes.DIARY) {
         popUpTo(Routes.LOGIN) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+/** Returns to Login on logout, clearing the entire authenticated back stack. */
+private fun NavHostController.toLogin() {
+    navigate(Routes.LOGIN) {
+        popUpTo(0) { inclusive = true }
         launchSingleTop = true
     }
 }
