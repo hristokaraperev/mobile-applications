@@ -23,8 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.calorietracker.data.food.FoodDto
 
 /**
- * Food search screen: a debounced query field, a prominent "Scan barcode" entry
- * (wired in a later slice), the result list, and an "Add custom food" fallback.
+ * Food search screen: a debounced query field, a prominent "Scan barcode" entry that
+ * opens the barcode scanner, the result list, and an "Add custom food" fallback.
  */
 @Composable
 fun FoodSearchScreen(

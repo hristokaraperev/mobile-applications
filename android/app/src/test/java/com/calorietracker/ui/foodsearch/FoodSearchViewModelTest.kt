@@ -1,5 +1,6 @@
 package com.calorietracker.ui.foodsearch
 
+import com.calorietracker.data.food.CreateFoodRequest
 import com.calorietracker.data.food.FoodApi
 import com.calorietracker.data.food.FoodDto
 import com.calorietracker.data.food.FoodRepository
@@ -34,6 +35,8 @@ class FoodSearchViewModelTest {
         }
 
         override suspend fun getById(id: Long): FoodDto = error("not used")
+        override suspend fun getByBarcode(ean: String): FoodDto = error("not used")
+        override suspend fun create(request: CreateFoodRequest): FoodDto = error("not used")
     }
 
     private fun food(id: Long, name: String): FoodDto =

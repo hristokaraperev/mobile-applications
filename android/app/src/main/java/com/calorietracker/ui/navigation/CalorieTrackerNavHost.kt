@@ -1,6 +1,8 @@
 package com.calorietracker.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -10,10 +12,15 @@ import androidx.navigation.navArgument
 import com.calorietracker.data.diary.MealType
 import com.calorietracker.ui.auth.LoginScreen
 import com.calorietracker.ui.auth.RegisterScreen
+import com.calorietracker.ui.customfood.CustomFoodScreen
 import com.calorietracker.ui.diary.DiaryScreen
 import com.calorietracker.ui.fooddetail.FoodDetailScreen
 import com.calorietracker.ui.foodsearch.FoodSearchScreen
 import com.calorietracker.ui.profile.ProfileScreen
+import com.calorietracker.ui.logportion.LogPortionScreen
+import com.calorietracker.ui.recipeeditor.RecipeEditorScreen
+import com.calorietracker.ui.recipelist.RecipeListScreen
+import com.calorietracker.ui.scanner.BarcodeScannerScreen
 import java.time.LocalDate
 
 /**
@@ -21,6 +28,8 @@ import java.time.LocalDate
  * back stack is reset to the Diary destination so the user cannot navigate back
  * into the auth flow. From the diary the user drills into food search and detail,
  * carrying the target meal and date forward so a saved entry lands on the right day.
+ * Food search can branch to the barcode scanner, which routes a known scan straight to
+ * food detail and an unknown scan to the custom-food form, both keeping that meal and date.
  */
 @Composable
 fun CalorieTrackerNavHost(navController: NavHostController = rememberNavController()) {
@@ -49,6 +58,7 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
             ProfileScreen(
                 onBack = { navController.popBackStack() },
                 onLoggedOut = { navController.toLogin() },
+                onOpenRecipes = { navController.navigate(Routes.RECIPES) },
             )
         }
         composable(
@@ -65,8 +75,55 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
                 onFoodSelected = { foodId ->
                     navController.navigate(Routes.foodDetail(foodId, mealType, date))
                 },
-                onScanBarcode = { /* Barcode scanner is added in a later slice. */ },
-                onAddCustomFood = { /* Custom-food creation is added in a later slice. */ },
+                onScanBarcode = { navController.navigate(Routes.scanner(mealType, date)) },
+                onAddCustomFood = { navController.navigate(Routes.customFood(mealType, date)) },
+            )
+        }
+        composable(
+            route = Routes.SCANNER,
+            arguments = listOf(
+                navArgument(Routes.ARG_MEAL_TYPE) { type = NavType.StringType },
+                navArgument(Routes.ARG_DATE) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val mealType = entry.mealType()
+            val date = entry.date()
+
+            BarcodeScannerScreen(
+                onFoodFound = { foodId ->
+                    navController.navigate(Routes.foodDetail(foodId, mealType, date)) {
+                        popUpTo(Routes.SCANNER) { inclusive = true }
+                    }
+                },
+                onUnknownBarcode = { barcode ->
+                    navController.navigate(Routes.customFood(mealType, date, barcode)) {
+                        popUpTo(Routes.SCANNER) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(
+            route = Routes.CUSTOM_FOOD,
+            arguments = listOf(
+                navArgument(Routes.ARG_MEAL_TYPE) { type = NavType.StringType },
+                navArgument(Routes.ARG_DATE) { type = NavType.StringType },
+                navArgument(Routes.ARG_BARCODE) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                },
+            ),
+        ) { entry ->
+            val mealType = entry.mealType()
+            val date = entry.date()
+
+            CustomFoodScreen(
+                barcode = entry.arguments?.getString(Routes.ARG_BARCODE).orEmpty(),
+                onCreated = { foodId ->
+                    navController.navigate(Routes.foodDetail(foodId, mealType, date)) {
+                        popUpTo(Routes.CUSTOM_FOOD) { inclusive = true }
+                    }
+                },
             )
         }
         composable(
@@ -82,6 +139,64 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
                 mealType = entry.mealType(),
                 entryDate = entry.date(),
                 onSaved = { navController.popBackStack(Routes.DIARY, inclusive = false) },
+            )
+        }
+        composable(Routes.RECIPES) {
+            RecipeListScreen(
+                onCreate = { navController.navigate(Routes.RECIPE_EDITOR_NEW) },
+                onEdit = { recipeId -> navController.navigate(Routes.recipeEditor(recipeId)) },
+                onLogPortion = { recipeId -> navController.navigate(Routes.logPortion(recipeId)) },
+            )
+        }
+        composable(Routes.RECIPE_EDITOR_NEW) { entry ->
+            val pickedFoodId by entry.savedStateHandle
+                .getStateFlow<Long?>(Routes.RESULT_INGREDIENT_FOOD_ID, null)
+                .collectAsStateWithLifecycle()
+
+            RecipeEditorScreen(
+                recipeId = null,
+                pickedFoodId = pickedFoodId,
+                onPickedConsumed = { entry.savedStateHandle[Routes.RESULT_INGREDIENT_FOOD_ID] = null },
+                onAddIngredient = { navController.navigate(Routes.INGREDIENT_SEARCH) },
+                onSaved = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
+            )
+        }
+        composable(
+            route = Routes.RECIPE_EDITOR_EDIT,
+            arguments = listOf(navArgument(Routes.ARG_RECIPE_ID) { type = NavType.LongType }),
+        ) { entry ->
+            val pickedFoodId by entry.savedStateHandle
+                .getStateFlow<Long?>(Routes.RESULT_INGREDIENT_FOOD_ID, null)
+                .collectAsStateWithLifecycle()
+
+            RecipeEditorScreen(
+                recipeId = entry.arguments?.getLong(Routes.ARG_RECIPE_ID),
+                pickedFoodId = pickedFoodId,
+                onPickedConsumed = { entry.savedStateHandle[Routes.RESULT_INGREDIENT_FOOD_ID] = null },
+                onAddIngredient = { navController.navigate(Routes.INGREDIENT_SEARCH) },
+                onSaved = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
+            )
+        }
+        composable(Routes.INGREDIENT_SEARCH) {
+            FoodSearchScreen(
+                onFoodSelected = { foodId ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(Routes.RESULT_INGREDIENT_FOOD_ID, foodId)
+                    navController.popBackStack()
+                },
+                onScanBarcode = { /* Barcode scanner is added in a later slice. */ },
+                onAddCustomFood = { /* Custom-food creation is added in a later slice. */ },
+            )
+        }
+        composable(
+            route = Routes.LOG_PORTION,
+            arguments = listOf(navArgument(Routes.ARG_RECIPE_ID) { type = NavType.LongType }),
+        ) { entry ->
+            LogPortionScreen(
+                recipeId = entry.arguments?.getLong(Routes.ARG_RECIPE_ID) ?: 0L,
+                entryDate = LocalDate.now(),
+                onLogged = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
             )
         }
     }

@@ -7,6 +7,7 @@ import com.calorietracker.data.auth.TokenStore
 import com.calorietracker.data.diary.DiaryApi
 import com.calorietracker.data.food.FoodApi
 import com.calorietracker.data.user.UserApi
+import com.calorietracker.data.recipe.RecipeApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
 import dagger.Provides
@@ -81,4 +82,8 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideUserApi(retrofit: Retrofit): UserApi = retrofit.create(UserApi::class.java)
+    
+    @Provides
+    @Singleton
+    fun provideRecipeApi(retrofit: Retrofit): RecipeApi = retrofit.create(RecipeApi::class.java)
 }
