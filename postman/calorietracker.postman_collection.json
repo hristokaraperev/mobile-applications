@@ -120,6 +120,54 @@
       ]
     },
     {
+      "name": "User",
+      "description": "The authenticated user's own profile. All requests require a Bearer token.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "description": "Returns the authenticated user's profile, including their daily kcal goal."
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Profile (kcal goal)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", "me"]
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n  \"dailyKcalGoal\": 2200\n}"
+            },
+            "description": "Updates the authenticated user's daily kcal goal (must be positive). Returns the updated profile."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Foods",
       "description": "Food lookup and user-contributed food creation. All requests require a Bearer token.",
       "item": [
