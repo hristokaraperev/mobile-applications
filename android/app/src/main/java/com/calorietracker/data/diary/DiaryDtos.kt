@@ -20,6 +20,19 @@ data class DiaryEntryDto(
     val updatedAt: String? = null,
 )
 
+/**
+ * Human-readable quantity label for this entry: grams for a food entry, a singular/plural
+ * portion count for a recipe-portion entry. The unit is derived from [sourceType], since a
+ * food entry's [quantity] is grams while a recipe-portion entry's is a number of portions.
+ */
+fun DiaryEntryDto.quantityLabel(): String =
+    if (sourceType == "RECIPE_PORTION") {
+        val portions = quantity.toInt()
+        "$portions ${if (portions == 1) "portion" else "portions"}"
+    } else {
+        "${quantity.toInt()} g"
+    }
+
 /** Per-meal and daily nutrition totals for a date, compared against the user's kcal goal. */
 @Serializable
 data class DiarySummaryDto(
