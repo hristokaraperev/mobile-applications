@@ -21,3 +21,20 @@ data class FoodDto(
     val saltG: Double? = null,
     val servingSizeG: Double? = null,
 )
+
+/** Request body for creating a user-contributed food label; nutrition values are per 100 g. */
+@Serializable
+data class CreateFoodRequest(
+    val name: String,
+    val brand: String? = null,
+    val barcode: String? = null,
+    val energyKcal: Double,
+    val proteinG: Double? = null,
+    val carbsG: Double? = null,
+    val sugarsG: Double? = null,
+    val fatG: Double? = null,
+    val satFatG: Double? = null,
+    val fiberG: Double? = null,
+    val saltG: Double? = null,
+    val servingSizeG: Double? = null,
+)
