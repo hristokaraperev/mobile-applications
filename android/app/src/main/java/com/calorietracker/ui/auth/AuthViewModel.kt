@@ -4,11 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.calorietracker.data.auth.AuthRepository
 import com.calorietracker.data.auth.AuthResult
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * UI state shared by the Login and Register screens.
@@ -27,7 +29,8 @@ data class AuthUiState(
  * Drives login and registration, exposing a single [uiState] the screens render.
  * Delegates the actual work to [AuthRepository] and maps the result to UI state.
  */
-class AuthViewModel(
+@HiltViewModel
+class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
 ) : ViewModel() {
 

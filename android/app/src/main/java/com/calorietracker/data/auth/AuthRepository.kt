@@ -2,12 +2,13 @@ package com.calorietracker.data.auth
 
 import retrofit2.HttpException
 import java.io.IOException
+import javax.inject.Inject
 
 /**
  * Coordinates authentication: calls the API, persists the returned JWT, and maps
  * the response (or any error) into a domain [AuthResult] for the UI layer.
  */
-class AuthRepository(
+class AuthRepository @Inject constructor(
     private val api: AuthApi,
     private val tokenStore: TokenStore,
 ) {
