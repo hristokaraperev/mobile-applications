@@ -39,12 +39,17 @@
 
 ## Code quality
 
-- Always add javadocs to classes and public and private API that are not self-explanatory with the code. 
-- Always leave an empty line before return statements if it is not the only statement in a method or in a control block.
+- *ALWAYS* add javadocs to classes and public and private API that are not self-explanatory with the code. Document method arguments and return values.
+- *ALWAYS* leave an empty line before return statements if it is not the only statement in a method or in a control block.
 
 ## Backend applications - instructions
 
 - Create a postman collection and always keep up adding new endpoints in for testing purposes.
+
+## Frontend application - instructions
+
+- The frontend Android application will be tested on a real mobile phone, not on emulators.
+- When working on the frontend application copy the gitignored `local.properties` to worktree, so Gradle can find the SDK.
 
 ## Agent skills
 
