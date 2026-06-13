@@ -17,9 +17,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Configures HTTP security for the API: stateless JWT authentication, CORS, and
+ * the set of paths that remain accessible without a token.
+ */
 @Configuration
 public class SecurityConfig {
 
+    /** Paths that do not require authentication (auth endpoints, API docs, error page). */
     private static final String[] PUBLIC_PATHS = {
             "/v3/api-docs/**",
             "/v3/api-docs.yaml",
@@ -32,11 +37,20 @@ public class SecurityConfig {
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
+    /**
+     * Hashing algorithm used for storing and verifying user passwords.
+     */
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Defines the security filter chain: disables session-based concerns (CSRF, form
+     * login, HTTP basic), enforces stateless sessions, returns a plain 401 for
+     * unauthenticated requests, and inserts {@link JwtAuthFilter} ahead of the
+     * standard username/password filter so requests are authenticated via JWT.
+     */
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
         http
@@ -55,6 +69,10 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Builds the CORS policy applied to all endpoints, using the origin pattern(s)
+     * from {@code app.cors.allowed-origins}.
+     */
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();

@@ -9,6 +9,10 @@ import jakarta.persistence.Table;
 
 import java.time.OffsetDateTime;
 
+/**
+ * A user-owned recipe composed of {@link RecipeIngredient}s, used to compute and
+ * log per-portion nutrition via {@link com.calorietracker.diary.DiarySourceType#RECIPE_PORTION}.
+ */
 @Entity
 @Table(name = "recipes")
 public class Recipe {
@@ -23,15 +27,18 @@ public class Recipe {
     @Column(nullable = false)
     private String name;
 
+    /** Number of equal portions the recipe is divided into, used for per-portion nutrition math. */
     @Column(name = "number_of_portions", nullable = false)
     private Integer numberOfPortions;
 
+    /** Total weight of the finished dish in grams, if known; used to refine per-portion weight. */
     @Column(name = "total_cooked_weight_g")
     private Double totalCookedWeightG;
 
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
+    /** Soft-delete flag; deleted recipes are retained so clients can sync the deletion. */
     @Column(nullable = false)
     private boolean deleted;
 

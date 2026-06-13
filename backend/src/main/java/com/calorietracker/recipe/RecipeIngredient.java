@@ -7,6 +7,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+/**
+ * A single ingredient line of a {@link Recipe}: a {@link com.calorietracker.food.Food}
+ * and the quantity, in grams, used in that recipe.
+ */
 @Entity
 @Table(name = "recipe_ingredients")
 public class RecipeIngredient {
@@ -21,6 +25,7 @@ public class RecipeIngredient {
     @Column(name = "food_id", nullable = false)
     private Long foodId;
 
+    /** Quantity of this food used in the recipe, in grams. */
     @Column(nullable = false)
     private Double grams;
 
