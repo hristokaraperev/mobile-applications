@@ -33,6 +33,15 @@ class DiaryViewModelTest {
         override suspend fun summary(date: String): DiarySummaryDto = summary
     }
 
+    /** Fake API whose summary total is keyed by the requested date, to prove reloads. */
+    private class DateKeyedDiaryApi(
+        private val totalsByDate: Map<String, Double>,
+    ) : DiaryApi {
+        override suspend fun entries(date: String): List<DiaryEntryDto> = emptyList()
+        override suspend fun summary(date: String): DiarySummaryDto =
+            DiarySummaryDto(date = date, totalKcal = totalsByDate.getValue(date))
+    }
+
     private fun entry(mealType: String, kcal: Double): DiaryEntryDto =
         DiaryEntryDto(
             id = "00000000-0000-0000-0000-000000000000",
@@ -93,5 +102,47 @@ class DiaryViewModelTest {
 
         assertEquals(950.0, state.totalKcal, 0.001)
         assertEquals(2000, state.dailyKcalGoal)
+    }
+
+    @Test
+    fun `previousDay reloads the diary for the preceding date`() = runTest(dispatcher) {
+        val api = DateKeyedDiaryApi(
+            totalsByDate = mapOf(
+                "2026-06-13" to 950.0,
+                "2026-06-12" to 1200.0,
+            ),
+        )
+        val viewModel = DiaryViewModel(DiaryRepository(api))
+
+        viewModel.load(LocalDate.parse("2026-06-13"))
+        advanceUntilIdle()
+
+        viewModel.previousDay()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(LocalDate.parse("2026-06-12"), state.date)
+        assertEquals(1200.0, state.totalKcal, 0.001)
+    }
+
+    @Test
+    fun `nextDay reloads the diary for the following date`() = runTest(dispatcher) {
+        val api = DateKeyedDiaryApi(
+            totalsByDate = mapOf(
+                "2026-06-13" to 950.0,
+                "2026-06-14" to 800.0,
+            ),
+        )
+        val viewModel = DiaryViewModel(DiaryRepository(api))
+
+        viewModel.load(LocalDate.parse("2026-06-13"))
+        advanceUntilIdle()
+
+        viewModel.nextDay()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(LocalDate.parse("2026-06-14"), state.date)
+        assertEquals(800.0, state.totalKcal, 0.001)
     }
 }

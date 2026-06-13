@@ -60,6 +60,16 @@ class DiaryViewModel @Inject constructor(
         }
     }
 
+    /** Reloads the diary for the day before the one currently shown. */
+    fun previousDay() {
+        load(_uiState.value.date.minusDays(1))
+    }
+
+    /** Reloads the diary for the day after the one currently shown. */
+    fun nextDay() {
+        load(_uiState.value.date.plusDays(1))
+    }
+
     private fun DiaryUiState.withDay(day: DiaryDay): DiaryUiState {
         val byMeal = day.entries.groupBy { it.mealType }
 
