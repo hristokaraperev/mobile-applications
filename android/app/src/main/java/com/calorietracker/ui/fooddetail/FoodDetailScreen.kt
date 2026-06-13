@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -56,7 +57,7 @@ fun FoodDetailScreen(
 
     val food = state.food
     if (state.isLoading || food == null) {
-        Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+        Column(modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp)) {
             state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 ?: CircularProgressIndicator()
         }
@@ -65,7 +66,7 @@ fun FoodDetailScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
+        modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(food.name, style = MaterialTheme.typography.headlineSmall)

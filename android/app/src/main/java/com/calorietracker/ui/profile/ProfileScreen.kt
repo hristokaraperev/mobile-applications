@@ -2,9 +2,11 @@ package com.calorietracker.ui.profile
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +71,9 @@ fun ProfileScreen(
                 },
             )
         },
+        // Keep content clear of the system bars and the display cutout (the default
+        // Scaffold insets cover only the system bars, not the camera notch).
+        contentWindowInsets = WindowInsets.safeDrawing,
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
