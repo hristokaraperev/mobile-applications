@@ -1,5 +1,6 @@
 package com.calorietracker.ui.recipeeditor
 
+import com.calorietracker.data.food.CreateFoodRequest
 import com.calorietracker.data.food.FoodApi
 import com.calorietracker.data.food.FoodDto
 import com.calorietracker.data.food.FoodRepository
@@ -53,6 +54,8 @@ class RecipeEditorViewModelTest {
     private class FakeFoodApi(private val foodsById: Map<Long, FoodDto>) : FoodApi {
         override suspend fun search(query: String): List<FoodDto> = emptyList()
         override suspend fun getById(id: Long): FoodDto = foodsById.getValue(id)
+        override suspend fun getByBarcode(ean: String): FoodDto = error("not used")
+        override suspend fun create(request: CreateFoodRequest): FoodDto = error("not used")
     }
 
     private fun food(

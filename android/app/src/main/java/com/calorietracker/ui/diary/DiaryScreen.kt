@@ -38,7 +38,8 @@ private val dateLabelFormat = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.g
  * Home/Diary screen: a date selector, the four meal sections with their entries
  * and per-meal kcal, and a daily total against the user's goal. Tapping a meal's
  * "+" opens Food search for that meal and date via [onAddFood]; the app bar's
- * profile action opens the Profile screen via [onOpenProfile].
+ * profile action opens the Profile screen via [onOpenProfile], and the "Recipes"
+ * button opens the recipe list via [onOpenRecipes].
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,21 +69,15 @@ fun DiaryScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onOpenRecipes) { Text("Recipes") }
+            }
+
             DateSelector(
                 date = state.date,
                 onPrevious = viewModel::previousDay,
                 onNext = viewModel::nextDay,
             )
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onOpenRecipes) { Text("Recipes") }
-        }
-
-        DateSelector(
-            date = state.date,
-            onPrevious = viewModel::previousDay,
-            onNext = viewModel::nextDay,
-        )
 
             DailyTotal(totalKcal = state.totalKcal, goal = state.dailyKcalGoal)
 

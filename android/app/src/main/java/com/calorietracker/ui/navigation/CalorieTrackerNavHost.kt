@@ -52,13 +52,13 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
                     navController.navigate(Routes.foodSearch(mealType, date))
                 },
                 onOpenProfile = { navController.navigate(Routes.PROFILE) },
+                onOpenRecipes = { navController.navigate(Routes.RECIPES) },
             )
         }
         composable(Routes.PROFILE) {
             ProfileScreen(
                 onBack = { navController.popBackStack() },
                 onLoggedOut = { navController.toLogin() },
-                onOpenRecipes = { navController.navigate(Routes.RECIPES) },
             )
         }
         composable(
