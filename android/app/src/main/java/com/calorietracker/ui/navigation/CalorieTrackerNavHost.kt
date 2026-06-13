@@ -1,6 +1,8 @@
 package com.calorietracker.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -14,6 +16,9 @@ import com.calorietracker.ui.customfood.CustomFoodScreen
 import com.calorietracker.ui.diary.DiaryScreen
 import com.calorietracker.ui.fooddetail.FoodDetailScreen
 import com.calorietracker.ui.foodsearch.FoodSearchScreen
+import com.calorietracker.ui.logportion.LogPortionScreen
+import com.calorietracker.ui.recipeeditor.RecipeEditorScreen
+import com.calorietracker.ui.recipelist.RecipeListScreen
 import com.calorietracker.ui.scanner.BarcodeScannerScreen
 import java.time.LocalDate
 
@@ -45,6 +50,7 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
                 onAddFood = { mealType, date ->
                     navController.navigate(Routes.foodSearch(mealType, date))
                 },
+                onOpenRecipes = { navController.navigate(Routes.RECIPES) },
             )
         }
         composable(
@@ -125,6 +131,64 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
                 mealType = entry.mealType(),
                 entryDate = entry.date(),
                 onSaved = { navController.popBackStack(Routes.DIARY, inclusive = false) },
+            )
+        }
+        composable(Routes.RECIPES) {
+            RecipeListScreen(
+                onCreate = { navController.navigate(Routes.RECIPE_EDITOR_NEW) },
+                onEdit = { recipeId -> navController.navigate(Routes.recipeEditor(recipeId)) },
+                onLogPortion = { recipeId -> navController.navigate(Routes.logPortion(recipeId)) },
+            )
+        }
+        composable(Routes.RECIPE_EDITOR_NEW) { entry ->
+            val pickedFoodId by entry.savedStateHandle
+                .getStateFlow<Long?>(Routes.RESULT_INGREDIENT_FOOD_ID, null)
+                .collectAsStateWithLifecycle()
+
+            RecipeEditorScreen(
+                recipeId = null,
+                pickedFoodId = pickedFoodId,
+                onPickedConsumed = { entry.savedStateHandle[Routes.RESULT_INGREDIENT_FOOD_ID] = null },
+                onAddIngredient = { navController.navigate(Routes.INGREDIENT_SEARCH) },
+                onSaved = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
+            )
+        }
+        composable(
+            route = Routes.RECIPE_EDITOR_EDIT,
+            arguments = listOf(navArgument(Routes.ARG_RECIPE_ID) { type = NavType.LongType }),
+        ) { entry ->
+            val pickedFoodId by entry.savedStateHandle
+                .getStateFlow<Long?>(Routes.RESULT_INGREDIENT_FOOD_ID, null)
+                .collectAsStateWithLifecycle()
+
+            RecipeEditorScreen(
+                recipeId = entry.arguments?.getLong(Routes.ARG_RECIPE_ID),
+                pickedFoodId = pickedFoodId,
+                onPickedConsumed = { entry.savedStateHandle[Routes.RESULT_INGREDIENT_FOOD_ID] = null },
+                onAddIngredient = { navController.navigate(Routes.INGREDIENT_SEARCH) },
+                onSaved = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
+            )
+        }
+        composable(Routes.INGREDIENT_SEARCH) {
+            FoodSearchScreen(
+                onFoodSelected = { foodId ->
+                    navController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.set(Routes.RESULT_INGREDIENT_FOOD_ID, foodId)
+                    navController.popBackStack()
+                },
+                onScanBarcode = { /* Barcode scanner is added in a later slice. */ },
+                onAddCustomFood = { /* Custom-food creation is added in a later slice. */ },
+            )
+        }
+        composable(
+            route = Routes.LOG_PORTION,
+            arguments = listOf(navArgument(Routes.ARG_RECIPE_ID) { type = NavType.LongType }),
+        ) { entry ->
+            LogPortionScreen(
+                recipeId = entry.arguments?.getLong(Routes.ARG_RECIPE_ID) ?: 0L,
+                entryDate = LocalDate.now(),
+                onLogged = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
             )
         }
     }

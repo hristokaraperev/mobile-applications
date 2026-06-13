@@ -62,4 +62,29 @@ class DiaryRepository @Inject constructor(
         } catch (e: IOException) {
             LogEntryResult.Failure("Could not reach the server. Check your connection.")
         }
+
+    /** Logs [portions] of recipe [recipeId] to [mealType] on [entryDate]. */
+    suspend fun logRecipePortion(
+        entryDate: LocalDate,
+        mealType: MealType,
+        recipeId: Long,
+        portions: Double,
+    ): LogEntryResult =
+        try {
+            api.create(
+                CreateDiaryEntryRequest(
+                    entryDate = entryDate.toString(),
+                    mealType = mealType.name,
+                    sourceType = "RECIPE_PORTION",
+                    recipeId = recipeId,
+                    quantity = portions,
+                )
+            )
+
+            LogEntryResult.Success
+        } catch (e: HttpException) {
+            LogEntryResult.Failure("Could not save this entry. Please try again.")
+        } catch (e: IOException) {
+            LogEntryResult.Failure("Could not reach the server. Check your connection.")
+        }
 }

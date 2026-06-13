@@ -13,6 +13,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ private val dateLabelFormat = DateTimeFormatter.ofPattern("EEE, d MMM", Locale.g
 @Composable
 fun DiaryScreen(
     onAddFood: (MealType, LocalDate) -> Unit,
+    onOpenRecipes: () -> Unit,
     viewModel: DiaryViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,6 +50,10 @@ fun DiaryScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onOpenRecipes) { Text("Recipes") }
+        }
+
         DateSelector(
             date = state.date,
             onPrevious = viewModel::previousDay,
