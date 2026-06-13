@@ -2,17 +2,24 @@ package com.calorietracker.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.calorietracker.data.diary.MealType
 import com.calorietracker.ui.auth.LoginScreen
 import com.calorietracker.ui.auth.RegisterScreen
 import com.calorietracker.ui.diary.DiaryScreen
+import com.calorietracker.ui.fooddetail.FoodDetailScreen
+import com.calorietracker.ui.foodsearch.FoodSearchScreen
+import java.time.LocalDate
 
 /**
  * Top-level navigation graph. Starts at Login; on successful authentication the
  * back stack is reset to the Diary destination so the user cannot navigate back
- * into the auth flow.
+ * into the auth flow. From the diary the user drills into food search and detail,
+ * carrying the target meal and date forward so a saved entry lands on the right day.
  */
 @Composable
 fun CalorieTrackerNavHost(navController: NavHostController = rememberNavController()) {
@@ -30,7 +37,44 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
             )
         }
         composable(Routes.DIARY) {
-            DiaryScreen()
+            DiaryScreen(
+                onAddFood = { mealType, date ->
+                    navController.navigate(Routes.foodSearch(mealType, date))
+                },
+            )
+        }
+        composable(
+            route = Routes.FOOD_SEARCH,
+            arguments = listOf(
+                navArgument(Routes.ARG_MEAL_TYPE) { type = NavType.StringType },
+                navArgument(Routes.ARG_DATE) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            val mealType = entry.mealType()
+            val date = entry.date()
+
+            FoodSearchScreen(
+                onFoodSelected = { foodId ->
+                    navController.navigate(Routes.foodDetail(foodId, mealType, date))
+                },
+                onScanBarcode = { /* Barcode scanner is added in a later slice. */ },
+                onAddCustomFood = { /* Custom-food creation is added in a later slice. */ },
+            )
+        }
+        composable(
+            route = Routes.FOOD_DETAIL,
+            arguments = listOf(
+                navArgument(Routes.ARG_FOOD_ID) { type = NavType.LongType },
+                navArgument(Routes.ARG_MEAL_TYPE) { type = NavType.StringType },
+                navArgument(Routes.ARG_DATE) { type = NavType.StringType },
+            ),
+        ) { entry ->
+            FoodDetailScreen(
+                foodId = entry.arguments?.getLong(Routes.ARG_FOOD_ID) ?: 0L,
+                mealType = entry.mealType(),
+                entryDate = entry.date(),
+                onSaved = { navController.popBackStack(Routes.DIARY, inclusive = false) },
+            )
         }
     }
 }
@@ -42,3 +86,9 @@ private fun NavHostController.toDiary() {
         launchSingleTop = true
     }
 }
+
+private fun androidx.navigation.NavBackStackEntry.mealType(): MealType =
+    MealType.valueOf(arguments?.getString(Routes.ARG_MEAL_TYPE) ?: MealType.BREAKFAST.name)
+
+private fun androidx.navigation.NavBackStackEntry.date(): LocalDate =
+    LocalDate.parse(arguments?.getString(Routes.ARG_DATE) ?: LocalDate.now().toString())
