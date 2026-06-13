@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -92,27 +93,39 @@ fun BarcodeScannerScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        when {
-            hasPermission -> {
-                CameraPreview(onBarcode = viewModel::onBarcodeDetected)
-                ScanAreaOverlay()
-            }
-
-            else -> CameraPermissionRationale(
-                denied = permissionDenied,
-                onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-            )
+        // The preview fills the whole screen, including behind the system bars and
+        // the display cutout, so the camera image is full-bleed.
+        if (hasPermission) {
+            CameraPreview(onBarcode = viewModel::onBarcodeDetected)
         }
 
-        state.errorMessage?.let { message ->
-            Text(
-                text = message,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(24.dp),
-            )
+        // Overlay controls live inside the safe area so the scan guide, error message,
+        // permission rationale, and (future) buttons stay clear of the bars and cutout.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .safeDrawingPadding(),
+            contentAlignment = Alignment.Center,
+        ) {
+            when {
+                hasPermission -> ScanAreaOverlay()
+
+                else -> CameraPermissionRationale(
+                    denied = permissionDenied,
+                    onRequest = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                )
+            }
+
+            state.errorMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(24.dp),
+                )
+            }
         }
     }
 }
