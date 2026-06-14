@@ -12,6 +12,7 @@ data class DiaryEntryDto(
     val foodId: Long? = null,
     val recipeId: Long? = null,
     val quantity: Double,
+    val itemName: String? = null,
     val kcal: Double,
     val proteinG: Double? = null,
     val carbsG: Double? = null,
@@ -32,6 +33,13 @@ fun DiaryEntryDto.quantityLabel(): String =
     } else {
         "${quantity.toInt()} g"
     }
+
+/**
+ * Display name for this entry: the name snapshotted at log time, falling back to a generic
+ * label for entries logged before names were captured (when [itemName] is absent or blank).
+ */
+fun DiaryEntryDto.displayName(): String =
+    itemName?.takeIf { it.isNotBlank() } ?: "Item"
 
 /** Per-meal and daily nutrition totals for a date, compared against the user's kcal goal. */
 @Serializable
