@@ -196,7 +196,9 @@ fun CalorieTrackerNavHost(navController: NavHostController = rememberNavControll
             LogPortionScreen(
                 recipeId = entry.arguments?.getLong(Routes.ARG_RECIPE_ID) ?: 0L,
                 entryDate = LocalDate.now(),
-                onLogged = { navController.popBackStack(Routes.RECIPES, inclusive = false) },
+                // Land on the Diary (which defaults to today, the logged day) so the entry is
+                // visible immediately, rather than returning to the recipe list.
+                onLogged = { navController.popBackStack(Routes.DIARY, inclusive = false) },
             )
         }
     }

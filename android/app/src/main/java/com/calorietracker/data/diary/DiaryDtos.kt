@@ -12,6 +12,7 @@ data class DiaryEntryDto(
     val foodId: Long? = null,
     val recipeId: Long? = null,
     val quantity: Double,
+    val itemName: String? = null,
     val kcal: Double,
     val proteinG: Double? = null,
     val carbsG: Double? = null,
@@ -19,6 +20,26 @@ data class DiaryEntryDto(
     val deleted: Boolean = false,
     val updatedAt: String? = null,
 )
+
+/**
+ * Human-readable quantity label for this entry: grams for a food entry, a singular/plural
+ * portion count for a recipe-portion entry. The unit is derived from [sourceType], since a
+ * food entry's [quantity] is grams while a recipe-portion entry's is a number of portions.
+ */
+fun DiaryEntryDto.quantityLabel(): String =
+    if (sourceType == "RECIPE_PORTION") {
+        val portions = quantity.toInt()
+        "$portions ${if (portions == 1) "portion" else "portions"}"
+    } else {
+        "${quantity.toInt()} g"
+    }
+
+/**
+ * Display name for this entry: the name snapshotted at log time, falling back to a generic
+ * label for entries logged before names were captured (when [itemName] is absent or blank).
+ */
+fun DiaryEntryDto.displayName(): String =
+    itemName?.takeIf { it.isNotBlank() } ?: "Item"
 
 /** Per-meal and daily nutrition totals for a date, compared against the user's kcal goal. */
 @Serializable
