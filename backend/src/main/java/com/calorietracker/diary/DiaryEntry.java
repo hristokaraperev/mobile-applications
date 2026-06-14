@@ -55,6 +55,13 @@ public class DiaryEntry {
     @Column(nullable = false)
     private Double quantity;
 
+    /**
+     * Display name of the logged food or recipe, snapshotted at log time so it remains
+     * correct even if the source is later renamed or deleted.
+     */
+    @Column(name = "item_name")
+    private String itemName;
+
     /** Energy for this entry, snapshotted at log time. */
     @Column(nullable = false)
     private Double kcal;
@@ -140,6 +147,14 @@ public class DiaryEntry {
 
     public void setQuantity(Double quantity) {
         this.quantity = quantity;
+    }
+
+    public String getItemName() {
+        return itemName;
+    }
+
+    public void setItemName(String itemName) {
+        this.itemName = itemName;
     }
 
     public Double getKcal() {

@@ -30,6 +30,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.calorietracker.data.diary.MealType
+import com.calorietracker.data.diary.displayName
 import com.calorietracker.data.diary.quantityLabel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -159,11 +160,17 @@ private fun MealCard(section: MealSection, onAdd: () -> Unit) {
 
             section.entries.forEach { entry ->
                 HorizontalDivider()
-                Text(
-                    text = "${entry.quantityLabel()} · ${entry.kcal.toInt()} kcal",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                )
+                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                    Text(
+                        text = entry.displayName(),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "${entry.quantityLabel()} · ${entry.kcal.toInt()} kcal",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

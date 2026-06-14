@@ -201,6 +201,7 @@ public class DiaryService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Food not found"));
 
         entry.setFoodId(foodId);
+        entry.setItemName(food.getName());
         entry.setKcal(round2(orZero(food.getEnergyKcal()) * quantityGrams / 100.0));
         entry.setProteinG(food.getProteinG() != null ? round2(food.getProteinG() * quantityGrams / 100.0) : null);
         entry.setCarbsG(food.getCarbsG() != null ? round2(food.getCarbsG() * quantityGrams / 100.0) : null);
@@ -215,6 +216,7 @@ public class DiaryService {
         int numberOfPortions = recipe.getNumberOfPortions();
 
         entry.setRecipeId(recipeId);
+        entry.setItemName(recipe.getName());
         entry.setKcal(round2(total.kcal() / numberOfPortions * portions));
         entry.setProteinG(round2(total.proteinG() / numberOfPortions * portions));
         entry.setCarbsG(round2(total.carbsG() / numberOfPortions * portions));

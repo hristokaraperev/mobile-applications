@@ -107,6 +107,53 @@ class DiaryControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void createEntry_foodSource_snapshotsItemName() throws Exception {
+        Food food = new Food();
+        food.setName("Banana");
+        food.setType(FoodType.PACKAGED);
+        food.setSource(FoodSource.CIQUAL);
+        food.setEnergyKcal(89.0);
+        food.setUpdatedAt(OffsetDateTime.now());
+        Long bananaId = foodRepository.save(food).getId();
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "BREAKFAST",
+                                "sourceType", "FOOD",
+                                "foodId", bananaId,
+                                "quantity", 100.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.itemName").value("Banana"));
+    }
+
+    @Test
+    void itemNameSnapshot_survivesSourceFoodDeletion() throws Exception {
+        Food food = new Food();
+        food.setName("Transient Snack");
+        food.setType(FoodType.PACKAGED);
+        food.setSource(FoodSource.CIQUAL);
+        food.setEnergyKcal(100.0);
+        food.setUpdatedAt(OffsetDateTime.now());
+        Long transientFoodId = foodRepository.save(food).getId();
+
+        postDiaryEntry("2026-06-08", "BREAKFAST", transientFoodId, 100.0);
+
+        // The source food is removed after logging; the snapshotted name must remain.
+        foodRepository.deleteById(transientFoodId);
+
+        mockMvc.perform(get("/diary")
+                        .param("date", "2026-06-08")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].itemName").value("Transient Snack"));
+    }
+
+    @Test
     void createEntry_foodSourceWithoutEnergyKcal_doesNotReturn500() throws Exception {
         // Reproduces a CIQUAL-style food row with no energy value (V2 migration allows energy_kcal to be NULL).
         Food food = new Food();
@@ -392,6 +439,36 @@ class DiaryControllerTest extends AbstractIntegrationTest {
     }
 
     // ── POST /diary RECIPE_PORTION ───────────────────────────────────────────
+
+    @Test
+    void createEntry_recipePortionSource_snapshotsRecipeName() throws Exception {
+        Recipe recipe = new Recipe();
+        recipe.setUserId(userId);
+        recipe.setName("Grandma's Stew");
+        recipe.setNumberOfPortions(2);
+        recipe.setUpdatedAt(OffsetDateTime.now());
+        recipe.setDeleted(false);
+        Long stewId = recipeRepository.save(recipe).getId();
+
+        RecipeIngredient ingredient = new RecipeIngredient();
+        ingredient.setRecipeId(stewId);
+        ingredient.setFoodId(foodId);
+        ingredient.setGrams(200.0);
+        recipeIngredientRepository.save(ingredient);
+
+        mockMvc.perform(post("/diary")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + token)
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "entryDate", "2026-06-08",
+                                "mealType", "LUNCH",
+                                "sourceType", "RECIPE_PORTION",
+                                "recipeId", stewId,
+                                "quantity", 1.0
+                        ))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.itemName").value("Grandma's Stew"));
+    }
 
     @Test
     void createEntry_recipePortionSource_snapshotsPerPortionNutrition() throws Exception {
